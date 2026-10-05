@@ -3098,52 +3098,98 @@ Completion requires all steps checked plus a written evidence note (30+ characte
 
 #### Lesson
 
-**Designing AI products**
+**Designing AI Products**
+AI features require setting accurate user expectations. Make the system's capabilities and limits explicitly clear during onboarding. Unlike static software, AI output is probabilistic. Design the interface to show confidence levels, cite sources where applicable, and always provide a visible way for users to correct or reject the system's output.
 
-Make capability and limits clear. Show confidence, sources, and ways to correct the system. Design for failure: wrong outputs, refusals, and latency. Keep humans in control of consequential actions.
+**Trust, Ethics, and Privacy**
+Collect the minimum data necessary to execute the task (data minimization). Explain how user data trains the model in plain language and provide granular, real consent controls. Follow global regulations such as GDPR. Trust is calibrated: users should trust the system when it is right, and correctly doubt it when it is uncertain.
 
-**Trust, ethics, privacy**
+**Designing for Failure and Edge Cases**
+Design for when the AI is wrong, refuses a prompt, or takes too long to generate. Use skeleton screens or progressive loading states for latency. When output fails, provide graceful degradation—offer alternative suggestions, clear error messages, and a seamless path to manual completion.
 
-Collect the minimum data, explain use in plain language, and give real consent controls. Audit for bias in data and in who your designs exclude. Follow regulations such as GDPR.
+**Prompt UX and Input Constraints**
+Blank text boxes cause 'blank canvas paralysis.' Guide users by providing contextual prompt templates, autocomplete suggestions, and input constraints. Frame the input UI to match the specific capability of the model, steering users away from unsupported requests.
 
-**Beyond screens**
+**Human in the Loop (HITL)**
+Keep humans in control of consequential actions. If an AI system handles financial, medical, or legal data, the interface must enforce a human review step before execution. Automation should augment human agency, not silently override it.
 
-Voice, conversational, spatial, and wearable interfaces require new patterns: turn-taking, error recovery, ambient feedback, and multimodal fallbacks. Prototype with Wizard of Oz tests before building.
+**Algorithmic Bias and Exclusion**
+Models inherit the biases of their training data. Audit your designs and AI features to identify who they might exclude or harm. Test with diverse user groups to catch bias in voice recognition, image generation, and text sentiment before shipping. 
+
+**Beyond Screens: Spatial and Voice UI**
+Voice, conversational, spatial, and wearable interfaces require entirely new interaction patterns. Voice UI needs clear turn-taking, ambient feedback, and multimodal fallbacks (e.g., sending a visual list to a phone when a voice list is too long). Spatial UI relies on depth, gaze tracking, and physical environment mapping.
+
+**Wizard of Oz Testing**
+Building AI models and spatial apps is expensive. Prototype interactions early using 'Wizard of Oz' tests: a user interacts with what they believe is an AI system, but a human operates the responses behind the scenes. This validates the user experience and interaction flow before writing complex engineering logic.
 
 #### Key takeaways
 
-- Show limits, sources, and correction
-- Minimize data, maximize consent
-- Wizard of Oz for new modalities
+- AI is probabilistic; always design for failure, latency, and correction.
+- Keep humans in the loop for consequential decisions.
+- Use Wizard of Oz testing to validate emerging interfaces cheaply.
 
 #### Quiz
 
-1. For AI outputs you should…
-   - a) Hide uncertainty
-   - b) Show limits and let users correct (correct)
-   - c) Remove sources
-   - Why: Transparency builds calibrated trust.
-2. Wizard of Oz testing means…
-   - a) A human simulates the system (correct)
-   - b) Using magic
-   - c) Skipping research
-   - Why: It tests concepts before engineering.
-3. Data minimization means…
-   - a) Collect everything
-   - b) Collect only what you need (correct)
-   - c) Sell data
-   - Why: Less data, less risk.
+1. AI system outputs are fundamentally…
+   - a) Deterministic
+   - b) Probabilistic (correct)
+   - c) Always 100% accurate
+   - Why: Models generate likely outputs, not guaranteed facts, requiring failure design.
+2. What is 'calibrated trust' in AI design?
+   - a) Users blindly trusting the AI
+   - b) Users trusting the system when it's accurate and doubting it when uncertain (correct)
+   - c) Forcing users to accept terms of service
+   - Why: Users need to know when to rely on the system and when to verify.
+3. To cure 'blank canvas paralysis' in AI chats, you should…
+   - a) Make the text box bigger
+   - b) Provide prompt templates and autocomplete suggestions (correct)
+   - c) Hide the input box
+   - Why: Users often don't know what the model is capable of answering.
+4. Human in the Loop (HITL) is most critical when…
+   - a) Generating color palettes
+   - b) Handling consequential actions like financial or medical data (correct)
+   - c) Writing placeholder text
+   - Why: High-stakes decisions require human accountability and review.
+5. Data minimization means…
+   - a) Collecting every possible data point for future training
+   - b) Collecting only the data necessary to execute the specific user task (correct)
+   - c) Deleting the database daily
+   - Why: It protects user privacy and reduces regulatory risk.
+6. A Wizard of Oz test involves…
+   - a) Using actual magic
+   - b) A human secretly simulating the system's responses to validate the UX (correct)
+   - c) Writing complex machine learning algorithms
+   - Why: It is the cheapest way to test conversational or AI UX before engineering.
+7. Multimodal fallbacks are important for Voice UI because…
+   - a) Users prefer reading
+   - b) Some outputs (like long lists) are better displayed visually than spoken aloud (correct)
+   - c) Microphones often break
+   - Why: Combining voice and visual channels accommodates complex information.
+8. When an AI system experiences high latency, the UI should…
+   - a) Freeze until the output is ready
+   - b) Use progressive loading states or skeleton screens (correct)
+   - c) Show a blank white screen
+   - Why: Feedback during waits prevents the user from abandoning the task.
+9. To combat algorithmic bias, teams must…
+   - a) Test exclusively with their internal engineering team
+   - b) Audit outputs and test with diverse, representative user groups (correct)
+   - c) Assume the training data is neutral
+   - Why: Models inherit historical biases that must be actively countered.
+10. If an AI generates incorrect output, the interface must…
+   - a) Delete the user's account
+   - b) Provide a clear, visible way for the user to edit, correct, or reject it (correct)
+   - c) Force the user to accept it
+   - Why: User agency must supersede algorithmic generation.
 
 #### Project: Design an AI feature responsibly
 
-1. Define the task and where the AI could be wrong
-2. Design states for success, uncertainty, and failure
-3. Add correction and human override controls
-4. Write a plain-language data and consent screen
+1. Define a specific user task and outline where the AI could realistically fail.
+2. Design the "Happy Path" UI showing the AI succeeding and displaying confidence levels.
+3. Design the "Failure State" UI, including clear error messaging and a manual override path.
+4. Write a plain-language data consent screen explaining what data is used and how.
+5. Draft a script for a Wizard of Oz test to validate this feature with a real user.
+6. Conduct an algorithmic bias audit: list 3 ways this specific feature could exclude or harm marginalized users.
 
-Completion requires all steps checked plus a written evidence note (30+ characters).
-
----
 
 ### Module 45: Design Leadership & Ops at Scale
 
