@@ -197,6 +197,109 @@
             
             
             
+            
+            // --- Lab 9: A/B Testing Lab ---
+            const lab9Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('9. **A/B') || el.textContent.includes('9. A/B'));
+            
+            lab9Headers.forEach(header => {
+                if(header.dataset.labInjected) return;
+
+                const labContainer = document.createElement('div');
+                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
+                labContainer.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: A/B Testing Simulator</h4>
+                    <p class="text-sm text-gray-600 mb-6">Run a live conversion simulation to determine whether Variant B (Blue CTA) outperforms Variant A (Red CTA). Collect at least 500 total visitors to achieve statistical significance.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <h5 class="font-bold text-gray-800 mb-1">Variant A (Control - Red)</h5>
+                            <p class="text-xs text-gray-500 mb-3">Visitors: <span id="lab9-vA">0</span> | Conversions: <span id="lab9-cA">0</span></p>
+                            <div class="text-sm font-semibold text-gray-700">Conversion Rate: <span id="lab9-rA" class="font-mono text-indigo-600">0.0%</span></div>
+                        </div>
+                        
+                        <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                            <h5 class="font-bold text-gray-800 mb-1">Variant B (Challenger - Blue)</h5>
+                            <p class="text-xs text-gray-500 mb-3">Visitors: <span id="lab9-vB">0</span> | Conversions: <span id="lab9-cB">0</span></p>
+                            <div class="text-sm font-semibold text-gray-700">Conversion Rate: <span id="lab9-rB" class="font-mono text-indigo-600">0.0%</span></div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4 mb-4">
+                        <button id="lab9-simulate" class="flex-1 bg-indigo-600 text-white py-2.5 px-4 rounded-md font-medium hover:bg-indigo-700 transition-colors shadow-sm">Simulate 100 Visitors</button>
+                        <button id="lab9-reset" class="bg-gray-200 text-gray-700 py-2.5 px-4 rounded-md font-medium hover:bg-gray-300 transition-colors">Reset</button>
+                    </div>
+
+                    <div id="lab9-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
+                        Click 'Simulate 100 Visitors' to gather statistical data.
+                    </div>
+                `;
+
+                header.parentNode.insertBefore(labContainer, header.nextSibling);
+                header.dataset.labInjected = 'true';
+
+                let visitorsA = 0, conversionsA = 0;
+                let visitorsB = 0, conversionsB = 0;
+
+                const vA = labContainer.querySelector('#lab9-vA');
+                const cA = labContainer.querySelector('#lab9-cA');
+                const rA = labContainer.querySelector('#lab9-rA');
+                const vB = labContainer.querySelector('#lab9-vB');
+                const cB = labContainer.querySelector('#lab9-cB');
+                const rB = labContainer.querySelector('#lab9-rB');
+                const simBtn = labContainer.querySelector('#lab9-simulate');
+                const resetBtn = labContainer.querySelector('#lab9-reset');
+                const statusDiv = labContainer.querySelector('#lab9-status');
+
+                function updateLab9Display() {
+                    vA.innerText = visitorsA;
+                    cA.innerText = conversionsA;
+                    rA.innerText = visitorsA ? ((conversionsA / visitorsA) * 100).toFixed(1) + '%' : '0.0%';
+
+                    vB.innerText = visitorsB;
+                    cB.innerText = conversionsB;
+                    rB.innerText = visitorsB ? ((conversionsB / visitorsB) * 100).toFixed(1) + '%' : '0.0%';
+
+                    const totalVisitors = visitorsA + visitorsB;
+
+                    if (totalVisitors >= 500) {
+                        const rateA = conversionsA / visitorsA;
+                        const rateB = conversionsB / visitorsB;
+                        
+                        if (rateB > rateA) {
+                            stateManager.completeLab('ab-testing-lab');
+                            statusDiv.innerText = '✅ Statistically Significant! Variant B is the winner.';
+                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
+                        } else {
+                            statusDiv.innerText = '⚠️ Significance reached, but Variant A performed better or equal.';
+                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
+                        }
+                    } else {
+                        statusDiv.innerText = `Total Visitors: ${totalVisitors}/500 required for significance.`;
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors';
+                    }
+                }
+
+                simBtn.addEventListener('click', () => {
+                    // Simulate traffic split evenly. Variant A converts at ~10%, Variant B at ~15%
+                    for(let i = 0; i < 50; i++) {
+                        visitorsA++;
+                        if (Math.random() < 0.10) conversionsA++;
+                    }
+                    for(let i = 0; i < 50; i++) {
+                        visitorsB++;
+                        if (Math.random() < 0.15) conversionsB++;
+                    }
+                    updateLab9Display();
+                });
+
+                resetBtn.addEventListener('click', () => {
+                    visitorsA = 0; conversionsA = 0;
+                    visitorsB = 0; conversionsB = 0;
+                    updateLab9Display();
+                });
+            });
+
+
             // --- Lab 8: Fitts's Law Lab ---
             const lab8Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('8. **Fitts') || el.textContent.includes('8. Fitts'));
             
