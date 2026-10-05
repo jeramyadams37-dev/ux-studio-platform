@@ -199,6 +199,87 @@
             
             
             
+            
+            // --- Lab 11: Heuristic Evaluation Lab ---
+            const lab11Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('11. **Heuristic') || el.textContent.includes('11. Heuristic') || el.textContent.includes('11. **Evaluation') || el.textContent.includes('11. Evaluation'));
+            
+            lab11Headers.forEach(header => {
+                if(header.dataset.labInjected) return;
+
+                const labContainer = document.createElement('div');
+                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
+                labContainer.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Heuristic Evaluation</h4>
+                    <p class="text-sm text-gray-600 mb-6">Inspect this flawed checkout screen. Tap all 3 hidden usability violations to flag them and review their heuristic corrections.</p>
+                    
+                    <div class="relative bg-white p-6 rounded-lg border-2 border-gray-300 shadow-inner mb-6 max-w-sm mx-auto">
+                        <h5 class="font-bold text-gray-900 mb-4">Checkout</h5>
+                        
+                        <!-- Violation 1: No loading state on submit -->
+                        <div class="relative mb-4">
+                            <button id="violation-1" class="w-full py-2.5 bg-gray-900 text-white font-bold rounded text-sm hover:bg-gray-800 transition-colors">
+                                Pay Now ($49.00)
+                            </button>
+                            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow animate-pulse cursor-pointer flag-btn" data-v="1">Flag Flaw</span>
+                        </div>
+
+                        <!-- Violation 2: Cryptic error message -->
+                        <div class="relative mb-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                            Error code 0x80070002: Process failed.
+                            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow animate-pulse cursor-pointer flag-btn" data-v="2">Flag Flaw</span>
+                        </div>
+
+                        <!-- Violation 3: No way to go back or edit cart -->
+                        <div class="relative text-center">
+                            <span class="text-xs text-gray-400">Final Step. No exit route.</span>
+                            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow animate-pulse cursor-pointer flag-btn" data-v="3">Flag Flaw</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 mb-4" id="lab11-log">
+                        <div class="p-2 bg-white border rounded text-xs text-gray-600" id="log-1">❌ Flaw 1: Visibility of System Status (Missing loading feedback)</div>
+                        <div class="p-2 bg-white border rounded text-xs text-gray-600" id="log-2">❌ Flaw 2: Error Recognition (Cryptic hex code instead of plain language)</div>
+                        <div class="p-2 bg-white border rounded text-xs text-gray-600" id="log-3">❌ Flaw 3: User Control & Freedom (Missing cancel or back option)</div>
+                    </div>
+
+                    <div id="lab11-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
+                        Flag all 3 usability flaws to complete the curriculum labs.
+                    </div>
+                `;
+
+                header.parentNode.insertBefore(labContainer, header.nextSibling);
+                header.dataset.labInjected = 'true';
+
+                const flagged = new Set();
+                const statusDiv = labContainer.querySelector('#lab11-status');
+                const flagButtons = labContainer.querySelectorAll('.flag-btn');
+
+                flagButtons.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const vId = e.target.dataset.v;
+                        flagged.add(vId);
+
+                        // Hide flag button
+                        e.target.style.display = 'none';
+
+                        // Update log text
+                        const logItem = labContainer.querySelector(`#log-${vId}`);
+                        logItem.innerHTML = logItem.innerHTML.replace('❌', '✅');
+                        logItem.className = 'p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800 font-bold';
+
+                        if (flagged.size === 3) {
+                            stateManager.completeLab('heuristic-evaluation-lab');
+                            statusDiv.innerText = '🏆 All 11 Labs Completed! You have mastered the UX interactive suite.';
+                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors shadow';
+                        } else {
+                            statusDiv.innerText = `Flagged ${flagged}/3 flaws. Keep analyzing.`;
+                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
+                        }
+                    });
+                });
+            });
+
+
             // --- Lab 10: Component States Lab ---
             const lab10Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('10. **Design Tokens') || el.textContent.includes('10. Design Tokens') || el.textContent.includes('10. **Component') || el.textContent.includes('10. Component'));
             
