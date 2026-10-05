@@ -196,6 +196,113 @@
             
             
             
+            
+            // --- Lab 8: Fitts's Law Lab ---
+            const lab8Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('8. **Fitts') || el.textContent.includes('8. Fitts'));
+            
+            lab8Headers.forEach(header => {
+                if(header.dataset.labInjected) return;
+
+                const labContainer = document.createElement('div');
+                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
+                labContainer.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Fitts's Law</h4>
+                    <p class="text-sm text-gray-600 mb-6">Fitts's Law states that target size and distance dictate interaction speed. Tap the 'Start' button, then tap the red target as fast as you can. Complete both tests to validate the law.</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-6 mb-6">
+                        <div class="flex-1 flex flex-col justify-center gap-4">
+                            <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <span class="block text-xs text-gray-500 uppercase font-bold mb-1">Test 1: Small & Far</span>
+                                <span id="lab8-time1" class="text-xl font-black text-gray-900">-- ms</span>
+                            </div>
+                            <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
+                                <span class="block text-xs text-gray-500 uppercase font-bold mb-1">Test 2: Large & Close</span>
+                                <span id="lab8-time2" class="text-xl font-black text-gray-900">-- ms</span>
+                            </div>
+                            <div id="lab8-insight" class="hidden p-3 bg-indigo-50 border border-indigo-100 rounded-md text-sm text-indigo-800 font-medium">
+                                Insight: Large targets in the bottom 'thumb zone' are significantly faster to tap.
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 flex justify-center">
+                            <div id="lab8-canvas" class="relative bg-gray-200 border-4 border-gray-800 rounded-[2rem] w-full max-w-[280px] h-[350px] overflow-hidden shadow-inner flex items-center justify-center">
+                                <button id="lab8-start" class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-full shadow-md active:bg-indigo-700 transition-colors">Start Test 1</button>
+                                
+                                <!-- Dynamic Target -->
+                                <button id="lab8-target" class="absolute hidden bg-red-500 rounded-full shadow-md active:bg-red-600"></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="lab8-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
+                        Tap 'Start Test 1' inside the phone screen to begin.
+                    </div>
+                `;
+
+                header.parentNode.insertBefore(labContainer, header.nextSibling);
+                header.dataset.labInjected = 'true';
+
+                const startBtn = labContainer.querySelector('#lab8-start');
+                const targetBtn = labContainer.querySelector('#lab8-target');
+                const time1Display = labContainer.querySelector('#lab8-time1');
+                const time2Display = labContainer.querySelector('#lab8-time2');
+                const insightBox = labContainer.querySelector('#lab8-insight');
+                const statusDiv = labContainer.querySelector('#lab8-status');
+
+                let currentTest = 1;
+                let startTime = 0;
+
+                startBtn.addEventListener('click', () => {
+                    startBtn.classList.add('hidden');
+                    targetBtn.classList.remove('hidden');
+                    
+                    if (currentTest === 1) {
+                        // Small target, top corner (Hard to reach)
+                        targetBtn.style.width = '30px';
+                        targetBtn.style.height = '30px';
+                        targetBtn.style.top = '20px';
+                        targetBtn.style.right = '20px';
+                        targetBtn.style.bottom = 'auto';
+                        targetBtn.style.left = 'auto';
+                        targetBtn.style.borderRadius = '50%';
+                        statusDiv.innerText = 'Quick! Tap the red target!';
+                    } else if (currentTest === 2) {
+                        // Large target, bottom full width (Thumb zone)
+                        targetBtn.style.width = '90%';
+                        targetBtn.style.height = '60px';
+                        targetBtn.style.bottom = '20px';
+                        targetBtn.style.left = '5%';
+                        targetBtn.style.top = 'auto';
+                        targetBtn.style.right = 'auto';
+                        targetBtn.style.borderRadius = '12px';
+                        statusDiv.innerText = 'Quick! Tap the red target!';
+                    }
+
+                    startTime = Date.now();
+                });
+
+                targetBtn.addEventListener('click', () => {
+                    const reactionTime = Date.now() - startTime;
+                    targetBtn.classList.add('hidden');
+
+                    if (currentTest === 1) {
+                        time1Display.innerText = reactionTime + ' ms';
+                        currentTest = 2;
+                        startBtn.innerText = 'Start Test 2';
+                        startBtn.classList.remove('hidden');
+                        statusDiv.innerText = 'Test 1 Complete. Tap Start Test 2 when ready.';
+                    } else if (currentTest === 2) {
+                        time2Display.innerText = reactionTime + ' ms';
+                        insightBox.classList.remove('hidden');
+                        
+                        stateManager.completeLab('fitts-law-lab');
+                        statusDiv.innerText = '✅ Fitts\'s Law Validated! Lab Complete.';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
+                    }
+                });
+            });
+
+
             // --- Lab 7: Accessibility Simulator Lab ---
             const lab7Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('7. **Accessibility Simulator') || el.textContent.includes('7. Accessibility Simulator'));
             
