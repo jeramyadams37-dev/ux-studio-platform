@@ -3151,52 +3151,98 @@ Completion requires all steps checked plus a written evidence note (30+ characte
 
 #### Lesson
 
-**Leading design**
+**From IC to Leader**
+Transitioning from an Individual Contributor (IC) to a leader requires a mindset shift: your output is no longer screens, but the performance and health of your team. Leaders absorb ambiguity and provide clarity. You must delegate craft to focus on strategy, shielding your team from organizational noise so they can focus on solving user problems.
 
-Set vision, hire for craft and judgment, give feedback that is specific and kind, and grow people through stretch work. Run critiques around goals, not taste: 'does this solve the user's problem?'
+**Hiring and Team Design**
+Hire for craft, judgment, and complementary skills, not cultural 'fit' (which often breeds homogeneity). Structure teams around user journeys rather than platforms to reduce silos. A balanced team requires a mix of junior talent for velocity, mid-level for execution, and senior staff to tackle architectural ambiguity.
 
-**Design operations**
+**DesignOps and Scaling**
+Design Operations (DesignOps) scales the work by optimizing tooling, templates, research repositories, intake processes, and review rituals. When a team grows past five designers, operational friction slows delivery. DesignOps standardizes file naming, handoff protocols, and asset management so designers spend time designing, not searching for files.
 
-DesignOps scales the work: tooling, templates, research repositories, intake, and review rituals. Measure design impact through quality, speed, and business outcomes.
+**The Art of Critique**
+Run critiques around strategic goals, not subjective taste. Instead of asking 'Do we like this?', ask 'Does this solve the user's problem based on our research?' Establish clear roles in reviews: a presenter, a facilitator, and a note-taker. Give feedback that is specific, actionable, and kind, focusing on the work, never the person.
 
-**Governance and influence**
+**Cross-Functional Alignment**
+Design cannot succeed in a vacuum. Build early alliances with product managers and engineering leads. Product owns the 'what,' engineering owns the 'how,' and design owns the 'why' and 'who.' Align on OKRs (Objectives and Key Results) early in the quarter so design effort is tied directly to business priorities.
 
-A federated system with contribution models avoids bottlenecks. Build influence by sharing research, writing decision docs, and aligning with product and engineering early.
+**Measuring Design Impact**
+Quantify design's value through quality, speed, and business outcomes. Track metrics like task success rate, reduced support tickets, and conversion lifts. Internally, measure operational velocity: how long does it take to ship a feature? Use data to justify headcount and budget requests.
+
+**Managing Up and Stakeholder Influence**
+A federated system with contribution models avoids bottlenecks. Build influence by sharing research findings openly, writing clear decision documents, and communicating trade-offs to executives in their language (risk and revenue). Never surprise stakeholders at a final review; share early and often.
+
+**Ethics and System Governance**
+Leaders are responsible for the ethical implications of their products at scale. Establish governance models for your design system—decide who can change tokens, how requests are reviewed, and how releases are versioned. Ensure accessibility and inclusive design are hardcoded into the definition of done, not treated as post-launch QA.
 
 #### Key takeaways
 
-- Critique goals, not taste
-- DesignOps scales process
-- Influence through evidence and early alignment
+- Your output as a leader is the team's health and velocity.
+- Critique goals and user needs, not subjective taste.
+- DesignOps scales process, tooling, and communication.
 
 #### Quiz
 
-1. A good critique asks…
-   - a) Do I like it?
-   - b) Does it meet the goal? (correct)
-   - c) Who made it?
-   - Why: Goals anchor feedback.
-2. DesignOps focuses on…
-   - a) Only visuals
-   - b) Scaling tools and process (correct)
-   - c) Hiring only
-   - Why: It removes friction.
-3. Best way to gain influence?
-   - a) Escalate
-   - b) Share evidence and align early (correct)
-   - c) Wait to be asked
-   - Why: Trust grows from shared insight.
+1. The primary shift when moving from IC to design leader is…
+   - a) Designing screens faster
+   - b) Focusing on team output and health instead of personal deliverables (correct)
+   - c) Writing all the code
+   - Why: A leader's product is the team itself.
+2. When hiring, prioritizing "culture fit" often leads to…
+   - a) High innovation
+   - b) Homogeneity and lack of diverse thought (correct)
+   - c) Better accessibility
+   - Why: Hiring for culture 'add' or complementary skills is safer.
+3. DesignOps primarily focuses on…
+   - a) Choosing brand colors
+   - b) Scaling tooling, process, and removing operational friction (correct)
+   - c) Running A/B tests
+   - Why: Ops lets designers focus on design.
+4. A good design critique asks…
+   - a) Does this look modern?
+   - b) Does this solve the user problem we defined? (correct)
+   - c) What is your favorite color?
+   - Why: Goals anchor feedback in reality.
+5. In cross-functional triads, Design traditionally owns…
+   - a) The 'why' and the 'who' (correct)
+   - b) The server architecture
+   - c) The exact launch date
+   - Why: Design advocates for the user and the problem.
+6. To justify budget to an executive, a design leader should focus on…
+   - a) Typography trends
+   - b) Business outcomes, risk reduction, and velocity (correct)
+   - c) The number of Figma layers
+   - Why: Executives speak the language of business impact.
+7. System governance defines…
+   - a) Who gets promoted
+   - b) How design system changes are proposed, reviewed, and versioned (correct)
+   - c) Office seating charts
+   - Why: Governance prevents the system from breaking down.
+8. Accessibility in a mature design team should be…
+   - a) Handled by developers only
+   - b) Hardcoded into the definition of done (correct)
+   - c) Checked a month after launch
+   - Why: Inclusive defaults are cheaper and more ethical.
+9. To manage stakeholders effectively, you should…
+   - a) Hide work until the final reveal
+   - b) Share early, align on goals, and avoid surprises (correct)
+   - c) Ignore their metrics
+   - Why: Trust grows from shared insight and visibility.
+10. Measuring operational velocity means tracking…
+   - a) How long it takes to go from brief to shipped feature (correct)
+   - b) The number of colors used
+   - c) The file size of the logo
+   - Why: It proves the efficiency of the design process.
 
 #### Project: Run a team practice
 
-1. Write a critique format with 3 rules
-2. Run it on a real design with 3 colleagues
-3. Draft a decision doc for a design change
-4. Define 3 metrics for design impact
+1. Write a 1-page critique guideline document with 3 core rules.
+2. Define a template for a 1-on-1 check-in with a junior designer.
+3. Draft a decision document mapping a recent design change to a business OKR.
+4. Define 3 specific metrics you would use to measure design impact on your current project.
+5. Write a contribution governance policy for a UI component library.
+6. Run a mock 15-minute critique session on a wireframe using your new guidelines.
 
-Completion requires all steps checked plus a written evidence note (30+ characters).
-
----
 
 ### Module 46: Capstone: Ship a Product End to End
 
