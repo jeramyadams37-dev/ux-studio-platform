@@ -3296,52 +3296,98 @@ Leaders are responsible for the ethical implications of their products at scale.
 
 #### Lesson
 
-**The brief**
+**The Brief and Scope**
+A capstone proves you can execute the entire UX process. Choose a real, narrow problem—not a broad, fake one like 'redesigning Spotify.' You are acting as the lead product designer. Treat this as a formal client engagement with a strict 4-to-6-week deadline. Define your scope, constraints, and success metrics on day one.
 
-Choose a real problem. You will research, define, ideate, prototype, test, build a mini system, write copy, plan metrics, and present. Treat it like a client project with a deadline.
+**Research and Discovery**
+Start with generative research. Conduct competitive analysis to understand existing mental models. Recruit at least 3 to 5 real users from your target demographic and conduct interviews focusing on past behavior. Send a survey if you need quantitative validation of the pain points you uncover. 
 
-**Deliverables**
+**Synthesis and Definition**
+Raw data is useless without synthesis. Use affinity mapping to cluster your research notes into actionable insights. Translate these insights into a primary persona, a user journey map highlighting emotional lows, and a clear, one-sentence problem statement. Frame your ideation using 'How Might We' (HMW) questions.
 
-Research summary, persona and journey map, IA and flows, wireframes, high-fidelity prototype, test report, tokens and 5 components, content guide, accessibility check, experiment plan, and a case study.
+**Ideation and Architecture**
+Do not jump into Figma immediately. Map the information architecture (IA) using a card sort or tree test. Draw the primary user flows for the happy path and critical edge cases (errors, empty states). Sketch multiple low-fidelity wireframes on paper to explore different layouts rapidly before committing to digital pixels.
 
-**How you are judged**
+**Prototyping and Interaction**
+Move your winning wireframes into a design tool. Build a high-fidelity prototype that looks and feels like a real product. Implement a modular 8px grid, a readable type scale, and a WCAG AA compliant color palette. Wire up the prototype with micro-interactions, realistic loading states, and functional navigation.
 
-Clarity of problem, quality of evidence, craft, accessibility, and your ability to explain trade-offs. Present in 10 minutes.
+**Testing and Iteration**
+A design is only a hypothesis until tested. Write a test plan with scenario-based tasks. Conduct moderated usability tests with 5 users, asking them to think aloud. Score the prototype using the System Usability Scale (SUS). Log every usability issue, rate them by severity, and iterate your design to fix the critical blockers.
+
+**Design Systems and Handoff**
+Prove your technical readiness by extracting your UI into a mini design system. Define your design tokens (color, typography, spacing). Build reusable components with variants and auto-layout. Prepare the file for developer handoff by organizing layers, adding behavioral annotations, and documenting accessibility requirements.
+
+**Storytelling and Presentation**
+Your final deliverable is a case study and a live presentation. Structure your narrative: Context, Problem, Research Insights, Key Decisions (show what you rejected), Final Solution, and Outcomes/Learnings. Keep the presentation under 10 minutes. Employers hire based on how clearly you explain your trade-offs, not just how pretty the final UI looks.
 
 #### Key takeaways
 
-- Treat it like a real client
-- Evidence over opinion
-- Explain your trade-offs
+- Scope narrowly and solve a real problem with evidence.
+- Prove your technical craft through a mini design system and clean handoff files.
+- The case study narrative is just as important as the final prototype.
 
 #### Quiz
 
-1. The strongest capstone feature is…
-   - a) Most screens
-   - b) Clear evidence-led decisions (correct)
-   - c) Most animations
-   - Why: Reasoning shows seniority.
-2. Where to begin?
-   - a) High-fidelity screens
-   - b) A researched problem (correct)
-   - c) A logo
-   - Why: Start with the user problem.
-3. What ends the project?
-   - a) Last screen done
-   - b) A tested, presented case study (correct)
-   - c) Launch day
-   - Why: Test and communicate.
+1. The best topic for a capstone project is…
+   - a) Redesigning a massive platform like Amazon
+   - b) A narrow, real-world problem you can research directly (correct)
+   - c) Whatever looks best on Dribbble
+   - Why: Narrow problems allow for deep, realistic UX process execution.
+2. During the Research and Discovery phase, you should focus on…
+   - a) Asking users what features they want in the future
+   - b) Understanding past behavior and current pain points (correct)
+   - c) Picking brand colors early
+   - Why: Past behavior is the only reliable predictor of user needs.
+3. What is the purpose of synthesis (like affinity mapping)?
+   - a) To make the deliverables look professional
+   - b) To cluster raw data into actionable insights and define the problem (correct)
+   - c) To write code faster
+   - Why: Synthesis translates noise into clear design direction.
+4. Before opening Figma for high-fidelity design, you should…
+   - a) Pick your fonts
+   - b) Map the architecture, draw flows, and sketch wireframes (correct)
+   - c) Start the presentation deck
+   - Why: Structural decisions are cheaper to make and change in low fidelity.
+5. A high-fidelity prototype should include…
+   - a) Only the happy path
+   - b) Realistic interactions, edge cases, and compliant contrast (correct)
+   - c) Lorem ipsum text everywhere
+   - Why: Realism is required to get valid feedback during usability testing.
+6. How many users are typically needed to uncover the majority of usability issues in a qualitative test?
+   - a) 1
+   - b) 5 (correct)
+   - c) 100
+   - Why: Industry standards show 5 users catch roughly 85% of major usability problems.
+7. The System Usability Scale (SUS) is used to…
+   - a) Measure rendering speed
+   - b) Provide a quantitative baseline score for usability (correct)
+   - c) Count the number of colors in a file
+   - Why: SUS gives a standardized metric to compare iterations.
+8. Preparing a file for developer handoff involves…
+   - a) Flattening all layers into a single image
+   - b) Organizing tokens, annotating behavior, and documenting accessibility (correct)
+   - c) Deleting all the wireframes
+   - Why: Handoff requires explicit communication of how the UI should be built.
+9. When presenting your case study, employers care most about…
+   - a) The final visual polish alone
+   - b) Your reasoning, trade-offs, and evidence-based decisions (correct)
+   - c) The length of the presentation
+   - Why: Hiring managers want to see how you think and solve problems.
+10. In a case study narrative, you should always include…
+   - a) Only the ideas that worked perfectly
+   - b) Key decisions, including ideas you rejected and why (correct)
+   - c) Your entire personal biography
+   - Why: Showing discarded options proves you explore broadly before converging.
 
 #### Project: Complete the capstone
 
-1. Write the brief and research plan
-2. Deliver research, flows, and wireframes
-3. Deliver a tested prototype and mini design system
-4. Publish a case study and present it in 10 minutes
+1. Write a 1-page project brief defining the problem, target users, and scope.
+2. Deliver a research synthesis document including 1 persona and a journey map.
+3. Draw the complete user flow and sketch low-fidelity wireframes for the core task.
+4. Build a high-fidelity, clickable prototype with a mini design system (tokens + 5 components).
+5. Conduct a usability test with 3-5 users, log the issues, and implement fixes.
+6. Publish a formal case study and record a 10-minute video presentation of your process.
 
-Completion requires all steps checked plus a written evidence note (30+ characters).
-
----
 
 ### Module 47: Starting a Design Business or Product
 
