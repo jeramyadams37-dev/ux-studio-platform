@@ -191,6 +191,112 @@
                 updateLab1();
             });
 
+            
+            // --- Lab 3: Card Sort Lab ---
+            const lab3Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('3. **Card Sort Lab**') || el.textContent.includes('3. Card Sort Lab'));
+            
+            lab3Headers.forEach(header => {
+                if(header.dataset.labInjected) return;
+
+                const labContainer = document.createElement('div');
+                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
+                labContainer.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Card Sort Lab</h4>
+                    <p class="text-sm text-gray-600 mb-6">Organize content into groups. Tap an item, then tap a group to move it. Name all groups. Complete when all 9 are sorted with >= 2 items per group.</p>
+                    
+                    <div class="mb-6">
+                        <div class="text-sm font-bold text-gray-700 mb-2">Unsorted Items</div>
+                        <div id="lab3-unsorted" class="flex flex-wrap gap-2 p-4 bg-white border border-dashed border-gray-300 rounded-lg min-h-[80px]">
+                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="1">Pricing</button>
+                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="2">Team</button>
+                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="3">Careers</button>
+                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="4">Features</button>
+                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="5">API Docs</button>
+                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="6">Contact Us</button>
+                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="7">Case Studies</button>
+                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="8">System Status</button>
+                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="9">Terms of Service</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div class="lab3-group p-3 bg-white border border-gray-200 rounded-lg flex flex-col" data-group="1">
+                            <input type="text" placeholder="Name Group 1..." class="lab3-group-name w-full mb-3 p-1.5 text-sm border-b border-gray-300 focus:outline-none focus:border-indigo-500 font-bold text-gray-800">
+                            <div class="lab3-dropzone flex-1 flex flex-col gap-2 min-h-[100px] p-2 bg-gray-50 rounded border border-dashed border-gray-200"></div>
+                        </div>
+                        <div class="lab3-group p-3 bg-white border border-gray-200 rounded-lg flex flex-col" data-group="2">
+                            <input type="text" placeholder="Name Group 2..." class="lab3-group-name w-full mb-3 p-1.5 text-sm border-b border-gray-300 focus:outline-none focus:border-indigo-500 font-bold text-gray-800">
+                            <div class="lab3-dropzone flex-1 flex flex-col gap-2 min-h-[100px] p-2 bg-gray-50 rounded border border-dashed border-gray-200"></div>
+                        </div>
+                        <div class="lab3-group p-3 bg-white border border-gray-200 rounded-lg flex flex-col" data-group="3">
+                            <input type="text" placeholder="Name Group 3..." class="lab3-group-name w-full mb-3 p-1.5 text-sm border-b border-gray-300 focus:outline-none focus:border-indigo-500 font-bold text-gray-800">
+                            <div class="lab3-dropzone flex-1 flex flex-col gap-2 min-h-[100px] p-2 bg-gray-50 rounded border border-dashed border-gray-200"></div>
+                        </div>
+                    </div>
+
+                    <div id="lab3-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
+                        Sort all items and name groups to complete.
+                    </div>
+                `;
+
+                header.parentNode.insertBefore(labContainer, header.nextSibling);
+                header.dataset.labInjected = 'true';
+
+                let selectedItem = null;
+                const statusDiv = document.getElementById('lab3-status');
+                const unsortedZone = document.getElementById('lab3-unsorted');
+                const groups = document.querySelectorAll('.lab3-group');
+                const inputs = document.querySelectorAll('.lab3-group-name');
+
+                function checkLab3Completion() {
+                    const unsortedCount = unsortedZone.querySelectorAll('.lab3-item').length;
+                    let validGroups = 0;
+                    let allNamed = true;
+
+                    groups.forEach(g => {
+                        const count = g.querySelectorAll('.lab3-item').length;
+                        if (count >= 2) validGroups++;
+                    });
+
+                    inputs.forEach(input => {
+                        if (input.value.trim().length === 0) allNamed = false;
+                    });
+
+                    if (unsortedCount === 0 && validGroups === 3 && allNamed) {
+                        stateManager.completeLab('card-sort-lab');
+                        statusDiv.innerText = '✅ Card Sort Complete!';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
+                    } else {
+                        statusDiv.innerText = 'Sort all items (>= 2 per group) and name all groups.';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors';
+                    }
+                }
+
+                // Mobile-friendly tap-to-select, tap-to-move logic
+                labContainer.addEventListener('click', (e) => {
+                    const item = e.target.closest('.lab3-item');
+                    const dropzone = e.target.closest('.lab3-dropzone') || (e.target.closest('#lab3-unsorted') && !item ? unsortedZone : null);
+
+                    if (item) {
+                        if (selectedItem) selectedItem.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-1');
+                        if (selectedItem === item) {
+                            selectedItem = null; 
+                        } else {
+                            selectedItem = item;
+                            selectedItem.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-1');
+                        }
+                    } else if (dropzone && selectedItem) {
+                        dropzone.appendChild(selectedItem);
+                        selectedItem.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-1');
+                        selectedItem = null;
+                        checkLab3Completion();
+                    }
+                });
+
+                inputs.forEach(input => input.addEventListener('input', checkLab3Completion));
+            });
+
+
             // --- Lab 2: Type Scale Lab ---
             const lab2Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('2. **Type Scale Lab**') || el.textContent.includes('2. Type Scale Lab'));
             
