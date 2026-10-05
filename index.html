@@ -51,8 +51,12 @@
                 this.save();
             }
 
+            completeLab(labId) {
+                this.data.labs[labId] = true;
+                this.save();
+            }
+
             checkModuleCompletion() {
-                // Future expansion: Lock/Unlock exams based on module status
                 let completeCount = 0;
                 Object.keys(this.data.projects).forEach(mod => {
                     const p = this.data.projects[mod];
@@ -60,10 +64,28 @@
                     if (q?.passed && p?.evidence?.length >= 30) completeCount++;
                 });
                 const indicator = document.getElementById('progress-indicator');
-                if(indicator) indicator.innerText = `Modules Mastered: ${completeCount}`;
+                if(indicator) indicator.innerText = `Modules Mastered: ${completeCount} | Labs: ${Object.keys(this.data.labs).length}`;
             }
         }
         const stateManager = new UXStudioState();
+
+        // WCAG Contrast Math Utility
+        function getLuminance(hex) {
+            const rgb = parseInt(hex.slice(1), 16);
+            const r = (rgb >> 16) & 0xff;
+            const g = (rgb >>  8) & 0xff;
+            const b = (rgb >>  0) & 0xff;
+            const [rs, gs, bs] = [r, g, b].map(c => {
+                c = c / 255;
+                return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+            });
+            return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+        }
+        function getContrastRatio(hex1, hex2) {
+            const l1 = getLuminance(hex1);
+            const l2 = getLuminance(hex2);
+            return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+        }
     </script>
 </head>
 <body class="bg-gray-100 text-gray-900 font-sans antialiased p-4 md:p-8">
@@ -80,9 +102,104 @@
     </main>
 
     <script>
-        function transformInteractiveElements() {
-            let currentModule = 'intro';
+        function injectLabs() {
+            // Lab 1: Contrast Lab Injection
+            const lab1Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('1. **Contrast Lab**') || el.textContent.includes('1. Contrast Lab'));
             
+            lab1Headers.forEach(header => {
+                if(header.dataset.labInjected) return;
+                
+                const labContainer = document.createElement('div');
+                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
+                labContainer.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Contrast Lab</h4>
+                    <p class="text-sm text-gray-600 mb-6">Build a color pair that passes WCAG AA (>= 4.5:1). Avoid plain black on white.</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-6 mb-6">
+                        <div class="flex-1 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
+                                <div class="flex items-center space-x-2">
+                                    <input type="color" id="lab1-text" value="#ffffff" class="h-10 w-10 rounded cursor-pointer border-0 p-0">
+                                    <span id="lab1-text-hex" class="text-sm text-gray-500 font-mono uppercase">#FFFFFF</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
+                                <div class="flex items-center space-x-2">
+                                    <input type="color" id="lab1-bg" value="#3f00ff" class="h-10 w-10 rounded cursor-pointer border-0 p-0">
+                                    <span id="lab1-bg-hex" class="text-sm text-gray-500 font-mono uppercase">#3F00FF</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1 flex flex-col justify-center items-center p-6 rounded-lg shadow-inner text-center transition-colors duration-300" id="lab1-preview" style="background-color: #3f00ff; color: #ffffff;">
+                            <span class="text-3xl font-bold mb-2">Aa</span>
+                            <span class="text-sm font-medium">Normal Text Preview</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-gray-100">
+                        <div>
+                            <span class="block text-xs text-gray-500 uppercase tracking-wide font-bold">Contrast Ratio</span>
+                            <span id="lab1-ratio" class="text-2xl font-black text-gray-900">1.00:1</span>
+                        </div>
+                        <div id="lab1-status" class="px-4 py-2 rounded-full text-sm font-bold bg-gray-100 text-gray-500">
+                            Testing...
+                        </div>
+                    </div>
+                `;
+                
+                header.parentNode.insertBefore(labContainer, header.nextSibling);
+                header.dataset.labInjected = 'true';
+
+                // Lab Logic
+                const txtInput = document.getElementById('lab1-text');
+                const bgInput = document.getElementById('lab1-bg');
+                const txtHex = document.getElementById('lab1-text-hex');
+                const bgHex = document.getElementById('lab1-bg-hex');
+                const preview = document.getElementById('lab1-preview');
+                const ratioDisplay = document.getElementById('lab1-ratio');
+                const statusDisplay = document.getElementById('lab1-status');
+
+                function updateLab1() {
+                    const txt = txtInput.value;
+                    const bg = bgInput.value;
+                    
+                    txtHex.innerText = txt.toUpperCase();
+                    bgHex.innerText = bg.toUpperCase();
+                    preview.style.color = txt;
+                    preview.style.backgroundColor = bg;
+                    
+                    const ratio = getContrastRatio(txt, bg);
+                    ratioDisplay.innerText = `${ratio.toFixed(2)}:1`;
+
+                    const isBlackWhite = (txt === '#ffffff' && bg === '#000000') || (txt === '#000000' && bg === '#ffffff');
+
+                    if (ratio >= 4.5 && !isBlackWhite) {
+                        statusDisplay.innerText = '✅ WCAG AA Passed';
+                        statusDisplay.className = 'px-4 py-2 rounded-full text-sm font-bold bg-green-100 text-green-700';
+                        stateManager.completeLab('contrast-lab');
+                    } else if (isBlackWhite) {
+                        statusDisplay.innerText = '❌ Too basic (Try colors)';
+                        statusDisplay.className = 'px-4 py-2 rounded-full text-sm font-bold bg-yellow-100 text-yellow-700';
+                    } else {
+                        statusDisplay.innerText = '❌ Fail (Needs 4.5:1)';
+                        statusDisplay.className = 'px-4 py-2 rounded-full text-sm font-bold bg-red-100 text-red-700';
+                    }
+                }
+
+                txtInput.addEventListener('input', updateLab1);
+                bgInput.addEventListener('input', updateLab1);
+                updateLab1(); // Initial calculation
+            });
+        }
+
+        // Standard Parsers (condensed for brevity but maintaining previous logic)
+        function transformInteractiveElements() {
+            // [Previous Quiz & Project logic remains perfectly intact here]
+            // We re-inject it cleanly
+            let currentModule = 'intro';
             document.querySelectorAll('h3').forEach(h3 => {
                 const text = h3.textContent;
                 if(text.includes('Module')) {
@@ -94,12 +211,10 @@
             document.querySelectorAll('h4').forEach(h4 => {
                 const title = h4.textContent.trim();
                 const container = h4.nextElementSibling;
-                
                 let moduleNode = h4;
                 while (moduleNode && moduleNode.tagName !== 'H3') { moduleNode = moduleNode.previousElementSibling; }
                 const moduleId = moduleNode ? moduleNode.getAttribute('data-module') : 'unknown';
 
-                // --- Project Checklists ---
                 if (title === 'Project' || title.includes('Project:')) {
                     if (container && (container.tagName === 'OL' || container.tagName === 'UL')) {
                         const steps = container.querySelectorAll('li');
@@ -121,7 +236,6 @@
                     }
                 }
 
-                // --- Quiz Engine ---
                 if (title === 'Quiz' || title.includes('Quiz:')) {
                     if (container && (container.tagName === 'OL' || container.tagName === 'UL')) {
                         const quizForm = document.createElement('form');
@@ -132,7 +246,6 @@
                         let questionHtml = '';
                         
                         questions.forEach((qLi, qIndex) => {
-                            // First child node is the text of the question itself
                             const questionText = qLi.childNodes[0].textContent.trim();
                             const questionId = `${moduleId}-q${qIndex}`;
                             const optionsUl = qLi.querySelector('ul');
@@ -181,7 +294,6 @@
                 }
             });
 
-            // Project Listeners
             document.querySelectorAll('input[type="checkbox"]').forEach(box => {
                 box.addEventListener('change', e => stateManager.updateProject(e.target.dataset.module, e.target.dataset.step, e.target.checked));
             });
@@ -194,8 +306,6 @@
                     counterSpan.className = text.length >= 30 ? 'text-green-600 font-bold' : 'text-red-500 font-bold';
                 });
             });
-
-            // Quiz Listeners
             document.querySelectorAll('.submit-quiz').forEach(btn => {
                 btn.addEventListener('click', e => {
                     const form = e.target.closest('form');
@@ -210,7 +320,6 @@
                         const explanation = qBlock.querySelector('.explanation');
                         const labels = qBlock.querySelectorAll('.opt-label');
                         
-                        // Reset styles
                         labels.forEach(l => { l.classList.remove('bg-green-50', 'border-green-200', 'bg-red-50', 'border-red-200'); });
                         qBlock.classList.remove('border-green-400', 'border-red-400', 'border-gray-200');
 
@@ -227,12 +336,10 @@
                         explanation.classList.remove('hidden');
                         qBlock.classList.add(isCorrect ? 'border-green-400' : 'border-red-400');
                         
-                        // Feed the Spaced Repetition logic
                         stateManager.scheduleReview(qid, isCorrect);
                     });
                     
                     const total = questions.length;
-                    // 80% passing rule
                     const required = Math.round(0.8 * total);
                     const passed = correctCount >= required;
                     
@@ -253,6 +360,7 @@
             .then(text => {
                 document.getElementById('app-content').innerHTML = marked.parse(text);
                 transformInteractiveElements();
+                injectLabs(); // Fire the lab injection
             })
             .catch(err => {
                 document.getElementById('app-content').innerHTML = '<p class="text-red-500">Error loading curriculum file.</p>';
