@@ -192,6 +192,111 @@
             });
 
             
+            
+            // --- Lab 4: Wireframe Builder Lab ---
+            const lab4Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('4. **Wireframe Builder**') || el.textContent.includes('4. Wireframe Builder'));
+            
+            lab4Headers.forEach(header => {
+                if(header.dataset.labInjected) return;
+
+                const labContainer = document.createElement('div');
+                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
+                labContainer.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Wireframe Builder</h4>
+                    <p class="text-sm text-gray-600 mb-6">Assemble a mobile screen. Tap components to add them to the screen. Tap them on the screen to remove them.</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-6 mb-6">
+                        <div class="flex-1">
+                            <div class="text-sm font-bold text-gray-700 mb-2">Components</div>
+                            <div id="lab4-toolbox" class="flex flex-col gap-2">
+                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="header">Header</button>
+                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="hero">Hero Section</button>
+                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="card">Content Card</button>
+                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="primary-btn">Primary Button</button>
+                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="nav">Bottom Nav</button>
+                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="footer">Footer</button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-1">
+                            <div class="text-sm font-bold text-gray-700 mb-2">Mobile Screen (Tap to remove)</div>
+                            <div id="lab4-canvas" class="flex flex-col gap-1 p-2 bg-gray-200 border-4 border-gray-800 rounded-[2rem] min-h-[350px] w-full max-w-[280px] mx-auto overflow-hidden shadow-inner">
+                                <!-- Screen elements populate here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+                        <div class="text-sm font-bold text-gray-700 mb-2">Heuristic Checks:</div>
+                        <ul class="text-sm space-y-2 text-gray-600 font-medium" id="lab4-checks">
+                            <li id="check-header" class="flex items-center gap-2">❌ Header is first</li>
+                            <li id="check-hero" class="flex items-center gap-2">❌ Includes a hero</li>
+                            <li id="check-cards" class="flex items-center gap-2">❌ >= 2 cards</li>
+                            <li id="check-btn" class="flex items-center gap-2">❌ Exactly 1 primary button</li>
+                            <li id="check-bottom" class="flex items-center gap-2">❌ Nav or Footer is last</li>
+                        </ul>
+                    </div>
+                    <div id="lab4-status" class="mt-4 p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
+                        Pass all heuristic checks to complete.
+                    </div>
+                `;
+
+                header.parentNode.insertBefore(labContainer, header.nextSibling);
+                header.dataset.labInjected = 'true';
+
+                const toolbox = labContainer.querySelector('#lab4-toolbox');
+                const canvas = labContainer.querySelector('#lab4-canvas');
+                const statusDiv = labContainer.querySelector('#lab4-status');
+
+                function checkLab4Completion() {
+                    const items = Array.from(canvas.children).map(el => el.dataset.type);
+                    
+                    const hasHeaderFirst = items.length > 0 && items[0] === 'header';
+                    const hasHero = items.includes('hero');
+                    const cardCount = items.filter(i => i === 'card').length;
+                    const btnCount = items.filter(i => i === 'primary-btn').length;
+                    const hasBottomLast = items.length > 0 && (items[items.length - 1] === 'nav' || items[items.length - 1] === 'footer');
+
+                    document.getElementById('check-header').innerHTML = hasHeaderFirst ? '✅ <span class="text-green-700">Header is first</span>' : '❌ Header is first';
+                    document.getElementById('check-hero').innerHTML = hasHero ? '✅ <span class="text-green-700">Includes a hero</span>' : '❌ Includes a hero';
+                    document.getElementById('check-cards').innerHTML = cardCount >= 2 ? '✅ <span class="text-green-700">>= 2 cards</span>' : '❌ >= 2 cards';
+                    document.getElementById('check-btn').innerHTML = btnCount === 1 ? '✅ <span class="text-green-700">Exactly 1 primary button</span>' : '❌ Exactly 1 primary button';
+                    document.getElementById('check-bottom').innerHTML = hasBottomLast ? '✅ <span class="text-green-700">Nav or Footer is last</span>' : '❌ Nav or Footer is last';
+
+                    if (hasHeaderFirst && hasHero && cardCount >= 2 && btnCount === 1 && hasBottomLast) {
+                        stateManager.completeLab('wireframe-builder-lab');
+                        statusDiv.innerText = '✅ Wireframe Complete!';
+                        statusDiv.className = 'mt-4 p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
+                    } else {
+                        statusDiv.innerText = 'Pass all heuristic checks to complete.';
+                        statusDiv.className = 'mt-4 p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors';
+                    }
+                }
+
+                toolbox.addEventListener('click', (e) => {
+                    const tool = e.target.closest('.lab4-tool');
+                    if (tool) {
+                        const type = tool.dataset.type;
+                        const text = tool.innerText;
+                        const block = document.createElement('div');
+                        block.dataset.type = type;
+                        block.className = 'p-3 text-center text-xs font-bold bg-indigo-100 text-indigo-800 rounded border border-indigo-200 cursor-pointer hover:bg-red-100 hover:text-red-800 hover:border-red-200 transition-colors shadow-sm';
+                        block.innerText = text;
+                        canvas.appendChild(block);
+                        checkLab4Completion();
+                    }
+                });
+
+                canvas.addEventListener('click', (e) => {
+                    const block = e.target.closest('div[data-type]');
+                    if (block) {
+                        block.remove();
+                        checkLab4Completion();
+                    }
+                });
+            });
+
+
             // --- Lab 3: Card Sort Lab ---
             const lab3Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('3. **Card Sort Lab**') || el.textContent.includes('3. Card Sort Lab'));
             
