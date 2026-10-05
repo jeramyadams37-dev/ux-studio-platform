@@ -198,6 +198,108 @@
             
             
             
+            
+            // --- Lab 10: Component States Lab ---
+            const lab10Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('10. **Design Tokens') || el.textContent.includes('10. Design Tokens') || el.textContent.includes('10. **Component') || el.textContent.includes('10. Component'));
+            
+            lab10Headers.forEach(header => {
+                if(header.dataset.labInjected) return;
+
+                const labContainer = document.createElement('div');
+                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
+                labContainer.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Component States & Tokens</h4>
+                    <p class="text-sm text-gray-600 mb-6">Inspect all 5 essential states of a production UI component. Click each state button to verify its visual token definition before developer handoff.</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-6 mb-6 items-center">
+                        <div class="w-full md:w-1/2 space-y-2">
+                            <button class="lab10-state-btn w-full text-left p-3 rounded-lg border border-gray-300 bg-white hover:bg-indigo-50 font-medium text-sm transition-colors flex justify-between items-center" data-state="default">
+                                <span>1. Default State</span>
+                                <span class="state-badge text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">Unchecked</span>
+                            </button>
+                            <button class="lab10-state-btn w-full text-left p-3 rounded-lg border border-gray-300 bg-white hover:bg-indigo-50 font-medium text-sm transition-colors flex justify-between items-center" data-state="hover">
+                                <span>2. Hover State</span>
+                                <span class="state-badge text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">Unchecked</span>
+                            </button>
+                            <button class="lab10-state-btn w-full text-left p-3 rounded-lg border border-gray-300 bg-white hover:bg-indigo-50 font-medium text-sm transition-colors flex justify-between items-center" data-state="active">
+                                <span>3. Active / Pressed State</span>
+                                <span class="state-badge text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">Unchecked</span>
+                            </button>
+                            <button class="lab10-state-btn w-full text-left p-3 rounded-lg border border-gray-300 bg-white hover:bg-indigo-50 font-medium text-sm transition-colors flex justify-between items-center" data-state="disabled">
+                                <span>4. Disabled State</span>
+                                <span class="state-badge text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">Unchecked</span>
+                            </button>
+                            <button class="lab10-state-btn w-full text-left p-3 rounded-lg border border-gray-300 bg-white hover:bg-indigo-50 font-medium text-sm transition-colors flex justify-between items-center" data-state="loading">
+                                <span>5. Loading State</span>
+                                <span class="state-badge text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">Unchecked</span>
+                            </button>
+                        </div>
+                        
+                        <div class="w-full md:w-1/2 flex flex-col justify-center items-center bg-gray-200 p-8 rounded-lg shadow-inner min-h-[200px]">
+                            <div id="lab10-preview-wrap" class="w-full flex justify-center">
+                                <button id="lab10-component" class="w-full max-w-[200px] py-3 px-4 rounded-md font-bold text-sm shadow-md transition-all bg-indigo-600 text-white">
+                                    Continue
+                                </button>
+                            </div>
+                            <div id="lab10-token-desc" class="mt-4 text-xs font-mono text-gray-600 bg-white p-2 rounded border w-full text-center">
+                                Select a state on the left to inspect tokens.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="lab10-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
+                        Inspect all 5 states to complete this lab.
+                    </div>
+                `;
+
+                header.parentNode.insertBefore(labContainer, header.nextSibling);
+                header.dataset.labInjected = 'true';
+
+                const verifiedStates = new Set();
+                const compBtn = labContainer.querySelector('#lab10-component');
+                const tokenDesc = labContainer.querySelector('#lab10-token-desc');
+                const statusDiv = labContainer.querySelector('#lab10-status');
+                const buttons = labContainer.querySelectorAll('.lab10-state-btn');
+
+                const stateData = {
+                    default: { bg: 'bg-indigo-600', text: 'Continue', opacity: 'opacity-100', cursor: 'cursor-pointer', desc: 'token: bg-primary, text: text-white, radius: rounded-md' },
+                    hover: { bg: 'bg-indigo-700', text: 'Continue', opacity: 'opacity-100', cursor: 'cursor-pointer', desc: 'token: bg-primary-hover, shadow: md' },
+                    active: { bg: 'bg-indigo-800', text: 'Continue', opacity: 'opacity-100', cursor: 'cursor-pointer', desc: 'token: bg-primary-active, transform: scale(0.98)' },
+                    disabled: { bg: 'bg-gray-300', text: 'Continue', opacity: 'opacity-60', cursor: 'cursor-not-allowed', desc: 'token: bg-surface-disabled, text: text-subtle' },
+                    loading: { bg: 'bg-indigo-600', text: 'Processing...', opacity: 'opacity-90', cursor: 'wait', desc: 'token: state-loading, icon: spinner-anim' }
+                };
+
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const state = btn.dataset.state;
+                        verifiedStates.add(state);
+
+                        // Update button badge
+                        const badge = btn.querySelector('.state-badge');
+                        badge.innerText = 'Verified';
+                        badge.className = 'state-badge text-xs px-2 py-0.5 rounded bg-green-100 text-green-700 font-bold';
+                        btn.classList.add('border-indigo-500', 'bg-indigo-50/30');
+
+                        // Update Preview Component
+                        const data = stateData[state];
+                        compBtn.className = `w-full max-w-[200px] py-3 px-4 rounded-md font-bold text-sm shadow-md transition-all ${data.bg} text-white ${data.opacity} ${data.cursor}`;
+                        compBtn.innerText = data.text;
+                        tokenDesc.innerText = data.desc;
+
+                        // Check completion
+                        if (verifiedStates.size === 5) {
+                            stateManager.completeLab('component-states-lab');
+                            statusDiv.innerText = '✅ All 5 Component States Verified! Lab Complete.';
+                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
+                        } else {
+                            statusDiv.innerText = `Verified ${verifiedStates.size}/5 states. Keep inspecting.`;
+                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
+                        }
+                    });
+                });
+            });
+
+
             // --- Lab 9: A/B Testing Lab ---
             const lab9Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('9. **A/B') || el.textContent.includes('9. A/B'));
             
