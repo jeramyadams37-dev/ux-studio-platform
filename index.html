@@ -195,6 +195,124 @@
             
             
             
+            
+            // --- Lab 7: Accessibility Simulator Lab ---
+            const lab7Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('7. **Accessibility Simulator') || el.textContent.includes('7. Accessibility Simulator'));
+            
+            lab7Headers.forEach(header => {
+                if(header.dataset.labInjected) return;
+
+                const labContainer = document.createElement('div');
+                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
+                labContainer.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Accessibility Simulator</h4>
+                    <p class="text-sm text-gray-600 mb-6">Never rely on color alone to convey meaning. Apply a vision filter, observe how the red/green buttons become indistinguishable, then apply the Accessible UI fix to pass.</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-8 mb-6">
+                        <div class="w-full md:w-1/2 space-y-5">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Simulate Vision Impairment</label>
+                                <select id="lab7-filter" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="none">Normal Vision</option>
+                                    <option value="grayscale(100%)">Achromatopsia (Total Color Blindness)</option>
+                                    <option value="contrast(60%) brightness(90%)">Low Contrast Vision</option>
+                                    <option value="blur(3px)">Cataracts (Blur)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="pt-4 border-t border-gray-200">
+                                <label class="flex items-center space-x-3 cursor-pointer p-3 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
+                                    <input type="checkbox" id="lab7-fix" class="h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                                    <span class="text-sm font-bold text-gray-800">Apply Accessible UI Fix</span>
+                                </label>
+                                <p class="text-xs text-gray-500 mt-2 ml-1">Adds icons, underlines, and high-contrast blue/black instead of red/green.</p>
+                            </div>
+                        </div>
+                        
+                        <div class="w-full md:w-1/2 flex justify-center bg-gray-200 p-6 rounded-lg shadow-inner overflow-hidden">
+                            <div id="lab7-preview" class="bg-white p-5 rounded-lg shadow-md w-full max-w-[280px] transition-all duration-300">
+                                <h5 class="font-bold text-gray-900 mb-2">Confirm Delete</h5>
+                                <p class="text-sm text-gray-600 mb-6">Are you sure you want to delete this project? This action cannot be undone.</p>
+                                
+                                <div class="flex gap-3">
+                                    <button id="lab7-btn-cancel" class="flex-1 py-2 rounded text-sm font-bold text-white transition-colors" style="background-color: #ef4444;">
+                                        <span class="lab7-icon hidden mr-1">✖</span>Cancel
+                                    </button>
+                                    <button id="lab7-btn-confirm" class="flex-1 py-2 rounded text-sm font-bold text-white transition-colors" style="background-color: #22c55e;">
+                                        <span class="lab7-icon hidden mr-1">✔</span>Delete
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="lab7-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
+                        Step 1: Apply a vision filter to see the flaw.
+                    </div>
+                `;
+
+                header.parentNode.insertBefore(labContainer, header.nextSibling);
+                header.dataset.labInjected = 'true';
+
+                const filterSelect = labContainer.querySelector('#lab7-filter');
+                const fixToggle = labContainer.querySelector('#lab7-fix');
+                const preview = labContainer.querySelector('#lab7-preview');
+                const btnCancel = labContainer.querySelector('#lab7-btn-cancel');
+                const btnConfirm = labContainer.querySelector('#lab7-btn-confirm');
+                const icons = labContainer.querySelectorAll('.lab7-icon');
+                const statusDiv = labContainer.querySelector('#lab7-status');
+
+                let hasTestedFilter = false;
+
+                function updateLab7() {
+                    const filter = filterSelect.value;
+                    const isFixed = fixToggle.checked;
+                    
+                    // Apply CSS Filter
+                    preview.style.filter = filter;
+
+                    if (filter !== 'none') hasTestedFilter = true;
+
+                    // Apply UI Fixes
+                    if (isFixed) {
+                        btnCancel.style.backgroundColor = '#ffffff';
+                        btnCancel.style.color = '#1f2937';
+                        btnCancel.style.border = '2px solid #d1d5db';
+                        
+                        btnConfirm.style.backgroundColor = '#1d4ed8'; // High contrast blue
+                        btnConfirm.style.border = '2px solid #1d4ed8';
+                        
+                        icons.forEach(i => i.classList.remove('hidden'));
+                    } else {
+                        btnCancel.style.backgroundColor = '#ef4444'; // Red
+                        btnCancel.style.color = '#ffffff';
+                        btnCancel.style.border = 'none';
+                        
+                        btnConfirm.style.backgroundColor = '#22c55e'; // Green
+                        btnConfirm.style.border = 'none';
+                        
+                        icons.forEach(i => i.classList.add('hidden'));
+                    }
+
+                    // Completion Logic
+                    if (hasTestedFilter && isFixed) {
+                        stateManager.completeLab('accessibility-lab');
+                        statusDiv.innerText = '✅ Lab Complete! Icons & contrast survive the filters.';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
+                    } else if (hasTestedFilter && !isFixed) {
+                        statusDiv.innerText = 'Step 2: Now check the "Apply Accessible UI Fix" box.';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
+                    } else {
+                        statusDiv.innerText = 'Step 1: Apply a vision filter to see the flaw.';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors';
+                    }
+                }
+
+                filterSelect.addEventListener('change', updateLab7);
+                fixToggle.addEventListener('change', updateLab7);
+            });
+
+
             // --- Lab 6: Prototype Timing Lab ---
             const lab6Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('6. **Prototype Timing') || el.textContent.includes('6. Prototype Timing'));
             
