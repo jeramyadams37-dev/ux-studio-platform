@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UX Studio Curriculum</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-900 font-sans antialiased p-4 md:p-8">
+    <main class="max-w-4xl mx-auto bg-white p-6 md:p-12 rounded-xl shadow-sm prose prose-indigo">
+        <div id="app-content">Loading curriculum...</div>
+    </main>
+    <script>
+        fetch('ux-studio-curriculum.md')
+            .then(response => response.text())
+            .then(text => {
+                document.getElementById('app-content').innerHTML = marked.parse(text);
+            })
+            .catch(err => {
+                document.getElementById('app-content').innerHTML = '<p class="text-red-500">Error loading curriculum file.</p>';
+            });
+    </script>
+</body>
+</html>
