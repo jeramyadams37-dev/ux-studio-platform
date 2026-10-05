@@ -64,7 +64,7 @@
                     if (q?.passed && p?.evidence?.length >= 30) completeCount++;
                 });
                 const indicator = document.getElementById('progress-indicator');
-                if(indicator) indicator.innerText = `Modules Mastered: ${completeCount} | Labs: ${Object.keys(this.data.labs).length}`;
+                if(indicator) indicator.innerText = `Modules Mastered: ${completeCount} | Labs Completed: ${Object.keys(this.data.labs).length}`;
             }
         }
         const stateManager = new UXStudioState();
@@ -103,7 +103,7 @@
 
     <script>
         function injectLabs() {
-            // Lab 1: Contrast Lab Injection
+            // --- Lab 1: Contrast Lab ---
             const lab1Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('1. **Contrast Lab**') || el.textContent.includes('1. Contrast Lab'));
             
             lab1Headers.forEach(header => {
@@ -112,8 +112,8 @@
                 const labContainer = document.createElement('div');
                 labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
                 labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Contrast Lab</h4>
-                    <p class="text-sm text-gray-600 mb-6">Build a color pair that passes WCAG AA (>= 4.5:1). Avoid plain black on white.</p>
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Contrast Lab[span_4](start_span)[span_4](end_span)</h4>
+                    <p class="text-sm text-gray-600 mb-6">Build a color pair that passes WCAG AA (>= 4.5:1). Avoid plain black on white[span_5](start_span)[span_5](end_span).</p>
                     
                     <div class="flex flex-col md:flex-row gap-6 mb-6">
                         <div class="flex-1 space-y-4">
@@ -153,7 +153,6 @@
                 header.parentNode.insertBefore(labContainer, header.nextSibling);
                 header.dataset.labInjected = 'true';
 
-                // Lab Logic
                 const txtInput = document.getElementById('lab1-text');
                 const bgInput = document.getElementById('lab1-bg');
                 const txtHex = document.getElementById('lab1-text-hex');
@@ -165,7 +164,6 @@
                 function updateLab1() {
                     const txt = txtInput.value;
                     const bg = bgInput.value;
-                    
                     txtHex.innerText = txt.toUpperCase();
                     bgHex.innerText = bg.toUpperCase();
                     preview.style.color = txt;
@@ -188,17 +186,106 @@
                         statusDisplay.className = 'px-4 py-2 rounded-full text-sm font-bold bg-red-100 text-red-700';
                     }
                 }
-
                 txtInput.addEventListener('input', updateLab1);
                 bgInput.addEventListener('input', updateLab1);
-                updateLab1(); // Initial calculation
+                updateLab1();
+            });
+
+            // --- Lab 2: Type Scale Lab ---
+            const lab2Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('2. **Type Scale Lab**') || el.textContent.includes('2. Type Scale Lab'));
+            
+            lab2Headers.forEach(header => {
+                if(header.dataset.labInjected) return;
+
+                const labContainer = document.createElement('div');
+                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
+                labContainer.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Type Scale Lab[span_6](start_span)[span_6](end_span)</h4>
+                    <p class="text-sm text-gray-600 mb-6">Design a readable modular type scale. Base size must be >= 16px to complete[span_7](start_span)[span_7](end_span).</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Base Size: <span id="lab2-base-val" class="font-bold text-indigo-600">16</span>px</label>
+                                <input type="range" id="lab2-base" min="12" max="24" value="16" step="1" class="w-full accent-indigo-600">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Scale Ratio</label>
+                                <select id="lab2-ratio" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="1.067">Minor Second (1.067)</option>
+                                    <option value="1.125">Major Second (1.125)</option>
+                                    <option value="1.200" selected>Minor Third (1.200)</option>
+                                    <option value="1.250">Major Third (1.250)</option>
+                                    <option value="1.333">Perfect Fourth (1.333)</option>
+                                    <option value="1.414">Augmented Fourth (1.414)</option>
+                                    <option value="1.500">Perfect Fifth (1.500)</option>
+                                </select>
+                            </div>
+                            <button id="lab2-save" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md font-medium hover:bg-indigo-700 transition-colors shadow-sm">Save Scale Configuration</button>
+                        </div>
+                        
+                        <div class="p-4 bg-white rounded-lg shadow-inner border border-gray-200 space-y-3 overflow-y-auto max-h-64" id="lab2-preview">
+                            <!-- Dynamic Scale Preview Rendered Here -->
+                        </div>
+                    </div>
+
+                    <div id="lab2-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500">
+                        Adjust scale and click Save to complete.
+                    </div>
+                `;
+
+                header.parentNode.insertBefore(labContainer, header.nextSibling);
+                header.dataset.labInjected = 'true';
+
+                const baseInput = document.getElementById('lab2-base');
+                const baseValSpan = document.getElementById('lab2-base-val');
+                const ratioSelect = document.getElementById('lab2-ratio');
+                const previewBox = document.getElementById('lab2-preview');
+                const saveBtn = document.getElementById('lab2-save');
+                const statusDiv = document.getElementById('lab2-status');
+
+                function updateLab2() {
+                    const base = parseFloat(baseInput.value);
+                    const ratio = parseFloat(ratioSelect.value);
+                    baseValSpan.innerText = base;
+
+                    // Generate 5 steps of modular scale (Caption, Body, H3, H2, H1)
+                    const steps = [
+                        { name: 'Caption', size: Math.round(base / ratio) },
+                        { name: 'Body', size: base },
+                        { name: 'H3', size: Math.round(base * ratio) },
+                        { name: 'H2', size: Math.round(base * Math.pow(ratio, 2)) },
+                        { name: 'H1', size: Math.round(base * Math.pow(ratio, 3)) }
+                    ];
+
+                    previewBox.innerHTML = steps.map(s => `
+                        <div class="flex items-baseline justify-between border-b border-gray-100 pb-1">
+                            <span class="text-xs text-gray-400 font-mono">${s.name} (${s.size}px)</span>
+                            <span style="font-size: ${s.size}px; line-height: 1.2;" class="font-bold text-gray-800">Preview Text</span>
+                        </div>
+                    `).join('');
+                }
+
+                baseInput.addEventListener('input', updateLab2);
+                ratioSelect.addEventListener('change', updateLab2);
+
+                saveBtn.addEventListener('click', () => {
+                    const base = parseFloat(baseInput.value);
+                    if (base >= 16) {
+                        stateManager.completeLab('type-scale-lab');
+                        statusDiv.innerText = '✅ Type Scale Saved & Lab Complete!';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700';
+                    } else {
+                        statusDiv.innerText = '❌ Base size must be at least 16px[span_8](start_span)[span_8](end_span).';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-red-100 text-red-700';
+                    }
+                });
+
+                updateLab2();
             });
         }
 
-        // Standard Parsers (condensed for brevity but maintaining previous logic)
         function transformInteractiveElements() {
-            // [Previous Quiz & Project logic remains perfectly intact here]
-            // We re-inject it cleanly
             let currentModule = 'intro';
             document.querySelectorAll('h3').forEach(h3 => {
                 const text = h3.textContent;
@@ -360,7 +447,7 @@
             .then(text => {
                 document.getElementById('app-content').innerHTML = marked.parse(text);
                 transformInteractiveElements();
-                injectLabs(); // Fire the lab injection
+                injectLabs();
             })
             .catch(err => {
                 document.getElementById('app-content').innerHTML = '<p class="text-red-500">Error loading curriculum file.</p>';
