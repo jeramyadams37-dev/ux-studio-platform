@@ -193,6 +193,104 @@
 
             
             
+            
+            // --- Lab 5: Spacing & Grid Lab ---
+            const lab5Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('5. **Spacing') || el.textContent.includes('5. Spacing'));
+            
+            lab5Headers.forEach(header => {
+                if(header.dataset.labInjected) return;
+
+                const labContainer = document.createElement('div');
+                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
+                labContainer.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: 8px Grid Spacing Lab</h4>
+                    <p class="text-sm text-gray-600 mb-6">Adjust the padding and gap of this component. Complete the lab by setting both values to valid 8px grid multipliers (e.g., 8, 16, 24, 32).</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-8 mb-6 items-center justify-center">
+                        <div class="w-full md:w-1/2 space-y-6">
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="text-sm font-bold text-gray-700">Container Padding</label>
+                                    <span id="lab5-pad-val" class="font-mono text-sm bg-white px-2 py-1 border rounded text-red-600 font-bold">10px</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button id="lab5-pad-dec" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded transition-colors active:bg-gray-400">-</button>
+                                    <button id="lab5-pad-inc" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded transition-colors active:bg-gray-400">+</button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <label class="text-sm font-bold text-gray-700">Item Gap</label>
+                                    <span id="lab5-gap-val" class="font-mono text-sm bg-white px-2 py-1 border rounded text-red-600 font-bold">14px</span>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button id="lab5-gap-dec" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded transition-colors active:bg-gray-400">-</button>
+                                    <button id="lab5-gap-inc" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded transition-colors active:bg-gray-400">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="w-full md:w-1/2 flex justify-center bg-gray-200 p-8 rounded-lg shadow-inner">
+                            <div id="lab5-preview" class="bg-white border-2 border-indigo-400 rounded-lg shadow flex flex-col w-full max-w-[250px] transition-all duration-200" style="padding: 10px; gap: 14px;">
+                                <div class="h-6 bg-gray-300 rounded w-3/4"></div>
+                                <div class="h-4 bg-gray-200 rounded w-full"></div>
+                                <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+                                <div class="h-10 bg-indigo-600 rounded w-full mt-4"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="lab5-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
+                        Align both values to the 8px grid to complete.
+                    </div>
+                `;
+
+                header.parentNode.insertBefore(labContainer, header.nextSibling);
+                header.dataset.labInjected = 'true';
+
+                // Initial broken values
+                let pad = 10;
+                let gap = 14;
+
+                const padVal = labContainer.querySelector('#lab5-pad-val');
+                const gapVal = labContainer.querySelector('#lab5-gap-val');
+                const preview = labContainer.querySelector('#lab5-preview');
+                const statusDiv = labContainer.querySelector('#lab5-status');
+
+                function updateLab5() {
+                    padVal.innerText = pad + 'px';
+                    gapVal.innerText = gap + 'px';
+                    
+                    preview.style.padding = pad + 'px';
+                    preview.style.gap = gap + 'px';
+
+                    const padValid = pad > 0 && pad % 8 === 0;
+                    const gapValid = gap > 0 && gap % 8 === 0;
+
+                    padVal.className = `font-mono text-sm bg-white px-2 py-1 border rounded font-bold ${padValid ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}`;
+                    gapVal.className = `font-mono text-sm bg-white px-2 py-1 border rounded font-bold ${gapValid ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}`;
+
+                    if (padValid && gapValid) {
+                        stateManager.completeLab('spacing-lab');
+                        statusDiv.innerText = '✅ 8px Grid Aligned! Lab Complete.';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
+                    } else {
+                        statusDiv.innerText = 'Align both values to the 8px grid (e.g., 8, 16, 24).';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors';
+                    }
+                }
+
+                // Tap controls (incrementing by 2px so the user has to stop at multiples of 8)
+                labContainer.querySelector('#lab5-pad-inc').addEventListener('click', () => { pad += 2; updateLab5(); });
+                labContainer.querySelector('#lab5-pad-dec').addEventListener('click', () => { if(pad > 0) pad -= 2; updateLab5(); });
+                labContainer.querySelector('#lab5-gap-inc').addEventListener('click', () => { gap += 2; updateLab5(); });
+                labContainer.querySelector('#lab5-gap-dec').addEventListener('click', () => { if(gap > 0) gap -= 2; updateLab5(); });
+                
+                updateLab5();
+            });
+
+
             // --- Lab 4: Wireframe Builder Lab ---
             const lab4Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('4. **Wireframe Builder**') || el.textContent.includes('4. Wireframe Builder'));
             
