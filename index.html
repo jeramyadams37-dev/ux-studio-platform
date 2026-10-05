@@ -7,104 +7,116 @@
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // State Management Architecture
         class UXStudioState {
             constructor() {
                 this.storageKey = 'uxc';
-                this.defaultState = {
-                    name: '',
-                    lessons: {}, // { moduleId: boolean }
-                    quizzes: {}, // { moduleId: { score: number, passed: boolean, answers: object } }
-                    projects: {}, // { moduleId: { steps: object, evidence: string, complete: boolean } }
-                    labs: {}, // { labId: boolean }
-                    exams: {}, // { tier: score }
-                    srsQueue: [] // [{ questionId: string, nextReviewDate: timestamp, interval: number, easeFactor: number }]
-                };
+                this.defaultState = { name: '', lessons: {}, quizzes: {}, projects: {}, labs: {}, exams: {}, srsQueue: [] };
                 this.data = this.load();
             }
-
             load() {
-                try {
-                    const stored = localStorage.getItem(this.storageKey);
-                    return stored ? { ...this.defaultState, ...JSON.parse(stored) } : this.defaultState;
-                } catch (e) {
-                    console.error("Storage access failed", e);
-                    return this.defaultState;
-                }
+                try { return { ...this.defaultState, ...JSON.parse(localStorage.getItem(this.storageKey) || '{}') }; } 
+                catch (e) { return this.defaultState; }
             }
-
-            save() {
-                localStorage.setItem(this.storageKey, JSON.stringify(this.data));
-                this.checkModuleCompletion();
-            }
-
-            // SRS Logic (SuperMemo-2 inspired baseline)
-            scheduleReview(questionId, isCorrect) {
-                let item = this.data.srsQueue.find(q => q.questionId === questionId);
-                if (!item) {
-                    item = { questionId, nextReviewDate: Date.now(), interval: 1, easeFactor: 2.5 };
-                    this.data.srsQueue.push(item);
-                }
-
-                if (isCorrect) {
-                    item.interval = item.interval === 1 ? 3 : Math.round(item.interval * item.easeFactor);
-                    item.easeFactor = Math.max(1.3, item.easeFactor + 0.1);
-                } else {
-                    item.interval = 1;
-                    item.easeFactor = Math.max(1.3, item.easeFactor - 0.2);
-                }
-                
-                // Set next review date based on interval (in days)
-                item.nextReviewDate = Date.now() + (item.interval * 24 * 60 * 60 * 1000);
+            save() { localStorage.setItem(this.storageKey, JSON.stringify(this.data)); }
+            
+            updateProject(moduleId, stepIndex, isChecked) {
+                if (!this.data.projects[moduleId]) this.data.projects[moduleId] = { steps: {}, evidence: '' };
+                this.data.projects[moduleId].steps[stepIndex] = isChecked;
                 this.save();
             }
-
-            // Certification Rules Evaluation
-            checkModuleCompletion(moduleId) {
-                if (!moduleId) return;
-                
-                const lessonComplete = this.data.lessons[moduleId];
-                const quizPassed = this.data.quizzes[moduleId]?.passed;
-                
-                const project = this.data.projects[moduleId];
-                const projectComplete = project && 
-                                      Object.values(project.steps || {}).every(v => v === true) && 
-                                      (project.evidence || '').length >= 30;
-
-                if (lessonComplete && quizPassed && projectComplete) {
-                    console.log(`Module ${moduleId} fully complete!`);
-                    // Trigger UI unlock for tiers here
-                }
+            
+            updateEvidence(moduleId, text) {
+                if (!this.data.projects[moduleId]) this.data.projects[moduleId] = { steps: {}, evidence: '' };
+                this.data.projects[moduleId].evidence = text;
+                this.save();
             }
         }
-
         const stateManager = new UXStudioState();
     </script>
 </head>
 <body class="bg-gray-100 text-gray-900 font-sans antialiased p-4 md:p-8">
     
-    <nav class="max-w-4xl mx-auto flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm">
-        <h1 class="font-bold text-xl text-indigo-600">UX Studio</h1>
-        <div id="progress-indicator" class="text-sm font-medium text-gray-500">
-            Initializing State...
+    <nav class="max-w-4xl mx-auto flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+        <h1 class="font-bold text-xl text-indigo-600 tracking-tight">UX Studio</h1>
+        <div id="progress-indicator" class="text-sm font-semibold text-gray-600 bg-gray-100 py-1 px-3 rounded-full">
+            Loading State...
         </div>
     </nav>
 
-    <main class="max-w-4xl mx-auto bg-white p-6 md:p-12 rounded-xl shadow-sm prose prose-indigo max-w-none">
+    <main class="max-w-4xl mx-auto bg-white p-6 md:p-12 rounded-xl shadow-sm border border-gray-200 prose prose-indigo max-w-none">
         <div id="app-content">Loading curriculum...</div>
     </main>
 
     <script>
-        // Update UI based on loaded state
-        document.getElementById('progress-indicator').innerText = 
-            `Modules Saved: ${Object.keys(stateManager.data.lessons).length}`;
+        document.getElementById('progress-indicator').innerText = `State Active`;
 
-        // Fetch and parse Markdown
+        function transformInteractiveElements() {
+            let currentModule = 'intro';
+            
+            // Track module contexts by H3 tags
+            document.querySelectorAll('h3').forEach(h3 => {
+                const text = h3.textContent;
+                if(text.includes('Module')) {
+                    currentModule = text.split(':')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                    h3.setAttribute('data-module', currentModule);
+                }
+            });
+
+            document.querySelectorAll('h4').forEach(h4 => {
+                const title = h4.textContent.trim();
+                const container = h4.nextElementSibling;
+                
+                // Find nearest preceding H3 to act as the Module ID
+                let moduleNode = h4;
+                while (moduleNode && moduleNode.tagName !== 'H3') { moduleNode = moduleNode.previousElementSibling; }
+                const moduleId = moduleNode ? moduleNode.getAttribute('data-module') : 'unknown';
+
+                if (title === 'Project' || title.includes('Project:')) {
+                    if (container && (container.tagName === 'OL' || container.tagName === 'UL')) {
+                        const steps = container.querySelectorAll('li');
+                        steps.forEach((li, index) => {
+                            const originalText = li.innerHTML;
+                            const isChecked = stateManager.data.projects[moduleId]?.steps[index] ? 'checked' : '';
+                            li.innerHTML = `<label class="flex items-start space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors"><input type="checkbox" class="mt-1 h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" data-module="${moduleId}" data-step="${index}" ${isChecked}><span class="text-gray-700">${originalText}</span></label>`;
+                        });
+                        
+                        // Inject 30-character evidence textarea as required by curriculum rules
+                        const existingEvidence = stateManager.data.projects[moduleId]?.evidence || '';
+                        const evidenceBox = document.createElement('div');
+                        evidenceBox.className = 'mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200';
+                        evidenceBox.innerHTML = `
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Evidence Note (Required: 30+ chars)</label>
+                            <textarea class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" rows="3" placeholder="Paste a link to your Figma file, GitHub repo, or live project here..." data-module="${moduleId}">${existingEvidence}</textarea>
+                            <p class="text-xs text-gray-500 mt-2 evidence-counter">Current length: <span class="${existingEvidence.length >= 30 ? 'text-green-600' : 'text-red-500'} font-bold">${existingEvidence.length}</span> chars</p>
+                        `;
+                        container.parentNode.insertBefore(evidenceBox, container.nextSibling);
+                    }
+                }
+            });
+
+            // Event Listeners for DOM elements
+            document.querySelectorAll('input[type="checkbox"]').forEach(box => {
+                box.addEventListener('change', (e) => {
+                    stateManager.updateProject(e.target.dataset.module, e.target.dataset.step, e.target.checked);
+                });
+            });
+
+            document.querySelectorAll('textarea').forEach(area => {
+                area.addEventListener('input', (e) => {
+                    const text = e.target.value;
+                    stateManager.updateEvidence(e.target.dataset.module, text);
+                    const counterSpan = e.target.parentElement.querySelector('.evidence-counter span');
+                    counterSpan.innerText = text.length;
+                    counterSpan.className = text.length >= 30 ? 'text-green-600 font-bold' : 'text-red-500 font-bold';
+                });
+            });
+        }
+
         fetch('ux-studio-curriculum.md')
             .then(response => response.text())
             .then(text => {
-                // Future patch: Custom marked.js renderer to convert lists under "Quiz" and "Project" headers into interactive HTML forms
                 document.getElementById('app-content').innerHTML = marked.parse(text);
+                transformInteractiveElements();
             })
             .catch(err => {
                 document.getElementById('app-content').innerHTML = '<p class="text-red-500">Error loading curriculum file.</p>';
