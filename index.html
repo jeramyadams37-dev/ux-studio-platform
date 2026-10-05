@@ -194,6 +194,106 @@
             
             
             
+            
+            // --- Lab 6: Prototype Timing Lab ---
+            const lab6Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('6. **Prototype Timing') || el.textContent.includes('6. Prototype Timing'));
+            
+            lab6Headers.forEach(header => {
+                if(header.dataset.labInjected) return;
+
+                const labContainer = document.createElement('div');
+                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
+                labContainer.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Prototype Timing Lab</h4>
+                    <p class="text-sm text-gray-600 mb-6">Test micro-interaction timings. Complete the lab by setting the standard accessible UX timing (Ease-Out, 200ms - 300ms).</p>
+                    
+                    <div class="flex flex-col md:flex-row gap-8 mb-6 items-center">
+                        <div class="w-full md:w-1/2 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Easing Curve</label>
+                                <select id="lab6-easing" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                                    <option value="linear">Linear</option>
+                                    <option value="ease-in">Ease-In (Accelerate)</option>
+                                    <option value="ease-out">Ease-Out (Decelerate)</option>
+                                    <option value="ease-in-out">Ease-In-Out (Standard)</option>
+                                    <option value="cubic-bezier(0.175, 0.885, 0.32, 1.275)">Spring (Bouncy)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-center mb-1">
+                                    <label class="block text-sm font-medium text-gray-700">Duration: <span id="lab6-dur-val" class="font-bold text-indigo-600">500</span>ms</label>
+                                </div>
+                                <input type="range" id="lab6-duration" min="100" max="1000" value="500" step="50" class="w-full accent-indigo-600">
+                            </div>
+                            <button id="lab6-trigger" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md font-medium hover:bg-indigo-700 transition-colors shadow-sm">Play Animation</button>
+                        </div>
+                        
+                        <div class="w-full md:w-1/2 flex flex-col justify-center bg-gray-200 p-6 rounded-lg shadow-inner h-48 relative overflow-hidden border border-gray-300">
+                            <div class="absolute w-full px-6 left-0 flex items-center">
+                                <div id="lab6-dot" class="h-12 w-12 bg-indigo-500 rounded-full shadow-lg transform transition-transform" style="transform: translateX(0px);"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="lab6-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
+                        Select Ease-Out and 200-300ms, then hit Play.
+                    </div>
+                `;
+
+                header.parentNode.insertBefore(labContainer, header.nextSibling);
+                header.dataset.labInjected = 'true';
+
+                const easingSelect = labContainer.querySelector('#lab6-easing');
+                const durSlider = labContainer.querySelector('#lab6-duration');
+                const durVal = labContainer.querySelector('#lab6-dur-val');
+                const triggerBtn = labContainer.querySelector('#lab6-trigger');
+                const dot = labContainer.querySelector('#lab6-dot');
+                const statusDiv = labContainer.querySelector('#lab6-status');
+
+                let isToggled = false;
+
+                function updateLab6Settings() {
+                    durVal.innerText = durSlider.value;
+                }
+
+                easingSelect.addEventListener('change', updateLab6Settings);
+                durSlider.addEventListener('input', updateLab6Settings);
+
+                triggerBtn.addEventListener('click', () => {
+                    const easing = easingSelect.value;
+                    const duration = parseInt(durSlider.value);
+                    
+                    // Apply dynamic CSS transition properties securely
+                    dot.style.transition = 'transform ' + duration + 'ms ' + easing;
+                    
+                    // Toggle position visually inside the bounding box
+                    isToggled = !isToggled;
+                    dot.style.transform = isToggled ? 'translateX(150px)' : 'translateX(0px)';
+
+                    // Evaluate completion logic per curriculum specs
+                    const isValidEasing = easing === 'ease-out';
+                    const isValidDuration = duration >= 200 && duration <= 300;
+
+                    if (isValidEasing && isValidDuration) {
+                        stateManager.completeLab('prototype-timing-lab');
+                        statusDiv.innerText = '✅ Perfect! Ease-Out at ~250ms is the UX standard.';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
+                    } else if (isValidEasing) {
+                        statusDiv.innerText = '❌ Easing is correct, but duration should be 200-300ms.';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
+                    } else if (isValidDuration) {
+                        statusDiv.innerText = '❌ Duration is good, but use Ease-Out for UI entrances.';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
+                    } else {
+                        statusDiv.innerText = '❌ Set easing to Ease-Out and duration to 200-300ms.';
+                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-red-100 text-red-700 transition-colors';
+                    }
+                });
+
+                updateLab6Settings();
+            });
+
+
             // --- Lab 5: Spacing & Grid Lab ---
             const lab5Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('5. **Spacing') || el.textContent.includes('5. Spacing'));
             
