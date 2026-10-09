@@ -3,3 +3,6 @@ curriculum_backup_*.md
 index.single.html
 index.html.bak
 index-active.html
+*.bak-*
+*.tar.gz
+curriculum_backup_*.md
