@@ -1,1377 +1,215 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UX Studio Curriculum</title>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        class UXStudioState {
-            constructor() {
-                this.storageKey = 'uxc';
-                this.defaultState = { name: '', lessons: {}, quizzes: {}, projects: {}, labs: {}, exams: {}, srsQueue: [] };
-                this.data = this.load();
-            }
-            load() {
-                try { return { ...this.defaultState, ...JSON.parse(localStorage.getItem(this.storageKey) || '{}') }; } 
-                catch (e) { return this.defaultState; }
-            }
-            save() { 
-                localStorage.setItem(this.storageKey, JSON.stringify(this.data)); 
-                this.checkModuleCompletion();
-            }
-            
-            updateProject(moduleId, stepIndex, isChecked) {
-                if (!this.data.projects[moduleId]) this.data.projects[moduleId] = { steps: {}, evidence: '' };
-                this.data.projects[moduleId].steps[stepIndex] = isChecked;
-                this.save();
-            }
-            
-            updateEvidence(moduleId, text) {
-                if (!this.data.projects[moduleId]) this.data.projects[moduleId] = { steps: {}, evidence: '' };
-                this.data.projects[moduleId].evidence = text;
-                this.save();
-            }
-
-            scheduleReview(questionId, isCorrect) {
-                let item = this.data.srsQueue.find(q => q.questionId === questionId);
-                if (!item) {
-                    item = { questionId, nextReviewDate: Date.now(), interval: 1, easeFactor: 2.5 };
-                    this.data.srsQueue.push(item);
-                }
-                if (isCorrect) {
-                    item.interval = item.interval === 1 ? 3 : Math.round(item.interval * item.easeFactor);
-                    item.easeFactor = Math.max(1.3, item.easeFactor + 0.1);
-                } else {
-                    item.interval = 1;
-                    item.easeFactor = Math.max(1.3, item.easeFactor - 0.2);
-                }
-                item.nextReviewDate = Date.now() + (item.interval * 24 * 60 * 60 * 1000);
-                this.save();
-            }
-
-            completeLab(labId) {
-                this.data.labs[labId] = true;
-                this.save();
-            }
-
-            checkModuleCompletion() {
-                let completeCount = 0;
-                Object.keys(this.data.projects).forEach(mod => {
-                    const p = this.data.projects[mod];
-                    const q = this.data.quizzes[mod];
-                    if (q?.passed && p?.evidence?.length >= 30) completeCount++;
-                });
-                const indicator = document.getElementById('progress-indicator');
-                if(indicator) indicator.innerText = `Modules Mastered: ${completeCount} | Labs Completed: ${Object.keys(this.data.labs).length}`;
-            }
-        }
-        const stateManager = new UXStudioState();
-
-        // WCAG Contrast Math Utility
-        function getLuminance(hex) {
-            const rgb = parseInt(hex.slice(1), 16);
-            const r = (rgb >> 16) & 0xff;
-            const g = (rgb >>  8) & 0xff;
-            const b = (rgb >>  0) & 0xff;
-            const [rs, gs, bs] = [r, g, b].map(c => {
-                c = c / 255;
-                return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-            });
-            return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
-        }
-        function getContrastRatio(hex1, hex2) {
-            const l1 = getLuminance(hex1);
-            const l2 = getLuminance(hex2);
-            return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
-        }
-    </script>
-</head>
-<body class="bg-gray-100 text-gray-900 font-sans antialiased p-4 md:p-8">
-    
-    <nav class="max-w-4xl mx-auto flex justify-between items-center mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-        <h1 class="font-bold text-xl text-indigo-600 tracking-tight">UX Studio</h1>
-        <div id="progress-indicator" class="text-sm font-semibold text-gray-600 bg-gray-100 py-1 px-3 rounded-full">
-            Loading State...
-        </div>
-    </nav>
-
-    <main class="max-w-4xl mx-auto bg-white p-6 md:p-12 rounded-xl shadow-sm border border-gray-200 prose prose-indigo max-w-none">
-        <div id="app-content">Loading curriculum...</div>
-    </main>
-
-    <script>
-        function injectLabs() {
-            // --- Lab 1: Contrast Lab ---
-            const lab1Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('1. **Contrast Lab**') || el.textContent.includes('1. Contrast Lab'));
-            
-            lab1Headers.forEach(header => {
-                if(header.dataset.labInjected) return;
-                
-                const labContainer = document.createElement('div');
-                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
-                labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Contrast Lab[span_4](start_span)[span_4](end_span)</h4>
-                    <p class="text-sm text-gray-600 mb-6">Build a color pair that passes WCAG AA (>= 4.5:1). Avoid plain black on white[span_5](start_span)[span_5](end_span).</p>
-                    
-                    <div class="flex flex-col md:flex-row gap-6 mb-6">
-                        <div class="flex-1 space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Text Color</label>
-                                <div class="flex items-center space-x-2">
-                                    <input type="color" id="lab1-text" value="#ffffff" class="h-10 w-10 rounded cursor-pointer border-0 p-0">
-                                    <span id="lab1-text-hex" class="text-sm text-gray-500 font-mono uppercase">#FFFFFF</span>
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Background Color</label>
-                                <div class="flex items-center space-x-2">
-                                    <input type="color" id="lab1-bg" value="#3f00ff" class="h-10 w-10 rounded cursor-pointer border-0 p-0">
-                                    <span id="lab1-bg-hex" class="text-sm text-gray-500 font-mono uppercase">#3F00FF</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex-1 flex flex-col justify-center items-center p-6 rounded-lg shadow-inner text-center transition-colors duration-300" id="lab1-preview" style="background-color: #3f00ff; color: #ffffff;">
-                            <span class="text-3xl font-bold mb-2">Aa</span>
-                            <span class="text-sm font-medium">Normal Text Preview</span>
-                        </div>
-                    </div>
-                    
-                    <div class="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm border border-gray-100">
-                        <div>
-                            <span class="block text-xs text-gray-500 uppercase tracking-wide font-bold">Contrast Ratio</span>
-                            <span id="lab1-ratio" class="text-2xl font-black text-gray-900">1.00:1</span>
-                        </div>
-                        <div id="lab1-status" class="px-4 py-2 rounded-full text-sm font-bold bg-gray-100 text-gray-500">
-                            Testing...
-                        </div>
-                    </div>
-                `;
-                
-                header.parentNode.insertBefore(labContainer, header.nextSibling);
-                header.dataset.labInjected = 'true';
-
-                const txtInput = document.getElementById('lab1-text');
-                const bgInput = document.getElementById('lab1-bg');
-                const txtHex = document.getElementById('lab1-text-hex');
-                const bgHex = document.getElementById('lab1-bg-hex');
-                const preview = document.getElementById('lab1-preview');
-                const ratioDisplay = document.getElementById('lab1-ratio');
-                const statusDisplay = document.getElementById('lab1-status');
-
-                function updateLab1() {
-                    const txt = txtInput.value;
-                    const bg = bgInput.value;
-                    txtHex.innerText = txt.toUpperCase();
-                    bgHex.innerText = bg.toUpperCase();
-                    preview.style.color = txt;
-                    preview.style.backgroundColor = bg;
-                    
-                    const ratio = getContrastRatio(txt, bg);
-                    ratioDisplay.innerText = `${ratio.toFixed(2)}:1`;
-
-                    const isBlackWhite = (txt === '#ffffff' && bg === '#000000') || (txt === '#000000' && bg === '#ffffff');
-
-                    if (ratio >= 4.5 && !isBlackWhite) {
-                        statusDisplay.innerText = '✅ WCAG AA Passed';
-                        statusDisplay.className = 'px-4 py-2 rounded-full text-sm font-bold bg-green-100 text-green-700';
-                        stateManager.completeLab('contrast-lab');
-                    } else if (isBlackWhite) {
-                        statusDisplay.innerText = '❌ Too basic (Try colors)';
-                        statusDisplay.className = 'px-4 py-2 rounded-full text-sm font-bold bg-yellow-100 text-yellow-700';
-                    } else {
-                        statusDisplay.innerText = '❌ Fail (Needs 4.5:1)';
-                        statusDisplay.className = 'px-4 py-2 rounded-full text-sm font-bold bg-red-100 text-red-700';
-                    }
-                }
-                txtInput.addEventListener('input', updateLab1);
-                bgInput.addEventListener('input', updateLab1);
-                updateLab1();
-            });
-
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            // --- Lab 11: Heuristic Evaluation Lab ---
-            const lab11Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('11. **Heuristic') || el.textContent.includes('11. Heuristic') || el.textContent.includes('11. **Evaluation') || el.textContent.includes('11. Evaluation'));
-            
-            lab11Headers.forEach(header => {
-                if(header.dataset.labInjected) return;
-
-                const labContainer = document.createElement('div');
-                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
-                labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Heuristic Evaluation</h4>
-                    <p class="text-sm text-gray-600 mb-6">Inspect this flawed checkout screen. Tap all 3 hidden usability violations to flag them and review their heuristic corrections.</p>
-                    
-                    <div class="relative bg-white p-6 rounded-lg border-2 border-gray-300 shadow-inner mb-6 max-w-sm mx-auto">
-                        <h5 class="font-bold text-gray-900 mb-4">Checkout</h5>
-                        
-                        <!-- Violation 1: No loading state on submit -->
-                        <div class="relative mb-4">
-                            <button id="violation-1" class="w-full py-2.5 bg-gray-900 text-white font-bold rounded text-sm hover:bg-gray-800 transition-colors">
-                                Pay Now ($49.00)
-                            </button>
-                            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow animate-pulse cursor-pointer flag-btn" data-v="1">Flag Flaw</span>
-                        </div>
-
-                        <!-- Violation 2: Cryptic error message -->
-                        <div class="relative mb-4 p-3 bg-red-50 border border-red-200 rounded text-xs text-red-700">
-                            Error code 0x80070002: Process failed.
-                            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow animate-pulse cursor-pointer flag-btn" data-v="2">Flag Flaw</span>
-                        </div>
-
-                        <!-- Violation 3: No way to go back or edit cart -->
-                        <div class="relative text-center">
-                            <span class="text-xs text-gray-400">Final Step. No exit route.</span>
-                            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold shadow animate-pulse cursor-pointer flag-btn" data-v="3">Flag Flaw</span>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2 mb-4" id="lab11-log">
-                        <div class="p-2 bg-white border rounded text-xs text-gray-600" id="log-1">❌ Flaw 1: Visibility of System Status (Missing loading feedback)</div>
-                        <div class="p-2 bg-white border rounded text-xs text-gray-600" id="log-2">❌ Flaw 2: Error Recognition (Cryptic hex code instead of plain language)</div>
-                        <div class="p-2 bg-white border rounded text-xs text-gray-600" id="log-3">❌ Flaw 3: User Control & Freedom (Missing cancel or back option)</div>
-                    </div>
-
-                    <div id="lab11-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
-                        Flag all 3 usability flaws to complete the curriculum labs.
-                    </div>
-                `;
-
-                header.parentNode.insertBefore(labContainer, header.nextSibling);
-                header.dataset.labInjected = 'true';
-
-                const flagged = new Set();
-                const statusDiv = labContainer.querySelector('#lab11-status');
-                const flagButtons = labContainer.querySelectorAll('.flag-btn');
-
-                flagButtons.forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        const vId = e.target.dataset.v;
-                        flagged.add(vId);
-
-                        // Hide flag button
-                        e.target.style.display = 'none';
-
-                        // Update log text
-                        const logItem = labContainer.querySelector(`#log-${vId}`);
-                        logItem.innerHTML = logItem.innerHTML.replace('❌', '✅');
-                        logItem.className = 'p-2 bg-green-50 border border-green-200 rounded text-xs text-green-800 font-bold';
-
-                        if (flagged.size === 3) {
-                            stateManager.completeLab('heuristic-evaluation-lab');
-                            statusDiv.innerText = '🏆 All 11 Labs Completed! You have mastered the UX interactive suite.';
-                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors shadow';
-                        } else {
-                            statusDiv.innerText = `Flagged ${flagged}/3 flaws. Keep analyzing.`;
-                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
-                        }
-                    });
-                });
-            });
-
-
-            // --- Lab 10: Component States Lab ---
-            const lab10Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('10. **Design Tokens') || el.textContent.includes('10. Design Tokens') || el.textContent.includes('10. **Component') || el.textContent.includes('10. Component'));
-            
-            lab10Headers.forEach(header => {
-                if(header.dataset.labInjected) return;
-
-                const labContainer = document.createElement('div');
-                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
-                labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Component States & Tokens</h4>
-                    <p class="text-sm text-gray-600 mb-6">Inspect all 5 essential states of a production UI component. Click each state button to verify its visual token definition before developer handoff.</p>
-                    
-                    <div class="flex flex-col md:flex-row gap-6 mb-6 items-center">
-                        <div class="w-full md:w-1/2 space-y-2">
-                            <button class="lab10-state-btn w-full text-left p-3 rounded-lg border border-gray-300 bg-white hover:bg-indigo-50 font-medium text-sm transition-colors flex justify-between items-center" data-state="default">
-                                <span>1. Default State</span>
-                                <span class="state-badge text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">Unchecked</span>
-                            </button>
-                            <button class="lab10-state-btn w-full text-left p-3 rounded-lg border border-gray-300 bg-white hover:bg-indigo-50 font-medium text-sm transition-colors flex justify-between items-center" data-state="hover">
-                                <span>2. Hover State</span>
-                                <span class="state-badge text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">Unchecked</span>
-                            </button>
-                            <button class="lab10-state-btn w-full text-left p-3 rounded-lg border border-gray-300 bg-white hover:bg-indigo-50 font-medium text-sm transition-colors flex justify-between items-center" data-state="active">
-                                <span>3. Active / Pressed State</span>
-                                <span class="state-badge text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">Unchecked</span>
-                            </button>
-                            <button class="lab10-state-btn w-full text-left p-3 rounded-lg border border-gray-300 bg-white hover:bg-indigo-50 font-medium text-sm transition-colors flex justify-between items-center" data-state="disabled">
-                                <span>4. Disabled State</span>
-                                <span class="state-badge text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">Unchecked</span>
-                            </button>
-                            <button class="lab10-state-btn w-full text-left p-3 rounded-lg border border-gray-300 bg-white hover:bg-indigo-50 font-medium text-sm transition-colors flex justify-between items-center" data-state="loading">
-                                <span>5. Loading State</span>
-                                <span class="state-badge text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">Unchecked</span>
-                            </button>
-                        </div>
-                        
-                        <div class="w-full md:w-1/2 flex flex-col justify-center items-center bg-gray-200 p-8 rounded-lg shadow-inner min-h-[200px]">
-                            <div id="lab10-preview-wrap" class="w-full flex justify-center">
-                                <button id="lab10-component" class="w-full max-w-[200px] py-3 px-4 rounded-md font-bold text-sm shadow-md transition-all bg-indigo-600 text-white">
-                                    Continue
-                                </button>
-                            </div>
-                            <div id="lab10-token-desc" class="mt-4 text-xs font-mono text-gray-600 bg-white p-2 rounded border w-full text-center">
-                                Select a state on the left to inspect tokens.
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="lab10-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
-                        Inspect all 5 states to complete this lab.
-                    </div>
-                `;
-
-                header.parentNode.insertBefore(labContainer, header.nextSibling);
-                header.dataset.labInjected = 'true';
-
-                const verifiedStates = new Set();
-                const compBtn = labContainer.querySelector('#lab10-component');
-                const tokenDesc = labContainer.querySelector('#lab10-token-desc');
-                const statusDiv = labContainer.querySelector('#lab10-status');
-                const buttons = labContainer.querySelectorAll('.lab10-state-btn');
-
-                const stateData = {
-                    default: { bg: 'bg-indigo-600', text: 'Continue', opacity: 'opacity-100', cursor: 'cursor-pointer', desc: 'token: bg-primary, text: text-white, radius: rounded-md' },
-                    hover: { bg: 'bg-indigo-700', text: 'Continue', opacity: 'opacity-100', cursor: 'cursor-pointer', desc: 'token: bg-primary-hover, shadow: md' },
-                    active: { bg: 'bg-indigo-800', text: 'Continue', opacity: 'opacity-100', cursor: 'cursor-pointer', desc: 'token: bg-primary-active, transform: scale(0.98)' },
-                    disabled: { bg: 'bg-gray-300', text: 'Continue', opacity: 'opacity-60', cursor: 'cursor-not-allowed', desc: 'token: bg-surface-disabled, text: text-subtle' },
-                    loading: { bg: 'bg-indigo-600', text: 'Processing...', opacity: 'opacity-90', cursor: 'wait', desc: 'token: state-loading, icon: spinner-anim' }
-                };
-
-                buttons.forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const state = btn.dataset.state;
-                        verifiedStates.add(state);
-
-                        // Update button badge
-                        const badge = btn.querySelector('.state-badge');
-                        badge.innerText = 'Verified';
-                        badge.className = 'state-badge text-xs px-2 py-0.5 rounded bg-green-100 text-green-700 font-bold';
-                        btn.classList.add('border-indigo-500', 'bg-indigo-50/30');
-
-                        // Update Preview Component
-                        const data = stateData[state];
-                        compBtn.className = `w-full max-w-[200px] py-3 px-4 rounded-md font-bold text-sm shadow-md transition-all ${data.bg} text-white ${data.opacity} ${data.cursor}`;
-                        compBtn.innerText = data.text;
-                        tokenDesc.innerText = data.desc;
-
-                        // Check completion
-                        if (verifiedStates.size === 5) {
-                            stateManager.completeLab('component-states-lab');
-                            statusDiv.innerText = '✅ All 5 Component States Verified! Lab Complete.';
-                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
-                        } else {
-                            statusDiv.innerText = `Verified ${verifiedStates.size}/5 states. Keep inspecting.`;
-                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
-                        }
-                    });
-                });
-            });
-
-
-            // --- Lab 9: A/B Testing Lab ---
-            const lab9Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('9. **A/B') || el.textContent.includes('9. A/B'));
-            
-            lab9Headers.forEach(header => {
-                if(header.dataset.labInjected) return;
-
-                const labContainer = document.createElement('div');
-                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
-                labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: A/B Testing Simulator</h4>
-                    <p class="text-sm text-gray-600 mb-6">Run a live conversion simulation to determine whether Variant B (Blue CTA) outperforms Variant A (Red CTA). Collect at least 500 total visitors to achieve statistical significance.</p>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-                            <h5 class="font-bold text-gray-800 mb-1">Variant A (Control - Red)</h5>
-                            <p class="text-xs text-gray-500 mb-3">Visitors: <span id="lab9-vA">0</span> | Conversions: <span id="lab9-cA">0</span></p>
-                            <div class="text-sm font-semibold text-gray-700">Conversion Rate: <span id="lab9-rA" class="font-mono text-indigo-600">0.0%</span></div>
-                        </div>
-                        
-                        <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-                            <h5 class="font-bold text-gray-800 mb-1">Variant B (Challenger - Blue)</h5>
-                            <p class="text-xs text-gray-500 mb-3">Visitors: <span id="lab9-vB">0</span> | Conversions: <span id="lab9-cB">0</span></p>
-                            <div class="text-sm font-semibold text-gray-700">Conversion Rate: <span id="lab9-rB" class="font-mono text-indigo-600">0.0%</span></div>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-4 mb-4">
-                        <button id="lab9-simulate" class="flex-1 bg-indigo-600 text-white py-2.5 px-4 rounded-md font-medium hover:bg-indigo-700 transition-colors shadow-sm">Simulate 100 Visitors</button>
-                        <button id="lab9-reset" class="bg-gray-200 text-gray-700 py-2.5 px-4 rounded-md font-medium hover:bg-gray-300 transition-colors">Reset</button>
-                    </div>
-
-                    <div id="lab9-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
-                        Click 'Simulate 100 Visitors' to gather statistical data.
-                    </div>
-                `;
-
-                header.parentNode.insertBefore(labContainer, header.nextSibling);
-                header.dataset.labInjected = 'true';
-
-                let visitorsA = 0, conversionsA = 0;
-                let visitorsB = 0, conversionsB = 0;
-
-                const vA = labContainer.querySelector('#lab9-vA');
-                const cA = labContainer.querySelector('#lab9-cA');
-                const rA = labContainer.querySelector('#lab9-rA');
-                const vB = labContainer.querySelector('#lab9-vB');
-                const cB = labContainer.querySelector('#lab9-cB');
-                const rB = labContainer.querySelector('#lab9-rB');
-                const simBtn = labContainer.querySelector('#lab9-simulate');
-                const resetBtn = labContainer.querySelector('#lab9-reset');
-                const statusDiv = labContainer.querySelector('#lab9-status');
-
-                function updateLab9Display() {
-                    vA.innerText = visitorsA;
-                    cA.innerText = conversionsA;
-                    rA.innerText = visitorsA ? ((conversionsA / visitorsA) * 100).toFixed(1) + '%' : '0.0%';
-
-                    vB.innerText = visitorsB;
-                    cB.innerText = conversionsB;
-                    rB.innerText = visitorsB ? ((conversionsB / visitorsB) * 100).toFixed(1) + '%' : '0.0%';
-
-                    const totalVisitors = visitorsA + visitorsB;
-
-                    if (totalVisitors >= 500) {
-                        const rateA = conversionsA / visitorsA;
-                        const rateB = conversionsB / visitorsB;
-                        
-                        if (rateB > rateA) {
-                            stateManager.completeLab('ab-testing-lab');
-                            statusDiv.innerText = '✅ Statistically Significant! Variant B is the winner.';
-                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
-                        } else {
-                            statusDiv.innerText = '⚠️ Significance reached, but Variant A performed better or equal.';
-                            statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
-                        }
-                    } else {
-                        statusDiv.innerText = `Total Visitors: ${totalVisitors}/500 required for significance.`;
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors';
-                    }
-                }
-
-                simBtn.addEventListener('click', () => {
-                    // Simulate traffic split evenly. Variant A converts at ~10%, Variant B at ~15%
-                    for(let i = 0; i < 50; i++) {
-                        visitorsA++;
-                        if (Math.random() < 0.10) conversionsA++;
-                    }
-                    for(let i = 0; i < 50; i++) {
-                        visitorsB++;
-                        if (Math.random() < 0.15) conversionsB++;
-                    }
-                    updateLab9Display();
-                });
-
-                resetBtn.addEventListener('click', () => {
-                    visitorsA = 0; conversionsA = 0;
-                    visitorsB = 0; conversionsB = 0;
-                    updateLab9Display();
-                });
-            });
-
-
-            // --- Lab 8: Fitts's Law Lab ---
-            const lab8Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('8. **Fitts') || el.textContent.includes('8. Fitts'));
-            
-            lab8Headers.forEach(header => {
-                if(header.dataset.labInjected) return;
-
-                const labContainer = document.createElement('div');
-                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
-                labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Fitts's Law</h4>
-                    <p class="text-sm text-gray-600 mb-6">Fitts's Law states that target size and distance dictate interaction speed. Tap the 'Start' button, then tap the red target as fast as you can. Complete both tests to validate the law.</p>
-                    
-                    <div class="flex flex-col md:flex-row gap-6 mb-6">
-                        <div class="flex-1 flex flex-col justify-center gap-4">
-                            <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-                                <span class="block text-xs text-gray-500 uppercase font-bold mb-1">Test 1: Small & Far</span>
-                                <span id="lab8-time1" class="text-xl font-black text-gray-900">-- ms</span>
-                            </div>
-                            <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
-                                <span class="block text-xs text-gray-500 uppercase font-bold mb-1">Test 2: Large & Close</span>
-                                <span id="lab8-time2" class="text-xl font-black text-gray-900">-- ms</span>
-                            </div>
-                            <div id="lab8-insight" class="hidden p-3 bg-indigo-50 border border-indigo-100 rounded-md text-sm text-indigo-800 font-medium">
-                                Insight: Large targets in the bottom 'thumb zone' are significantly faster to tap.
-                            </div>
-                        </div>
-                        
-                        <div class="flex-1 flex justify-center">
-                            <div id="lab8-canvas" class="relative bg-gray-200 border-4 border-gray-800 rounded-[2rem] w-full max-w-[280px] h-[350px] overflow-hidden shadow-inner flex items-center justify-center">
-                                <button id="lab8-start" class="px-6 py-3 bg-indigo-600 text-white font-bold rounded-full shadow-md active:bg-indigo-700 transition-colors">Start Test 1</button>
-                                
-                                <!-- Dynamic Target -->
-                                <button id="lab8-target" class="absolute hidden bg-red-500 rounded-full shadow-md active:bg-red-600"></button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="lab8-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
-                        Tap 'Start Test 1' inside the phone screen to begin.
-                    </div>
-                `;
-
-                header.parentNode.insertBefore(labContainer, header.nextSibling);
-                header.dataset.labInjected = 'true';
-
-                const startBtn = labContainer.querySelector('#lab8-start');
-                const targetBtn = labContainer.querySelector('#lab8-target');
-                const time1Display = labContainer.querySelector('#lab8-time1');
-                const time2Display = labContainer.querySelector('#lab8-time2');
-                const insightBox = labContainer.querySelector('#lab8-insight');
-                const statusDiv = labContainer.querySelector('#lab8-status');
-
-                let currentTest = 1;
-                let startTime = 0;
-
-                startBtn.addEventListener('click', () => {
-                    startBtn.classList.add('hidden');
-                    targetBtn.classList.remove('hidden');
-                    
-                    if (currentTest === 1) {
-                        // Small target, top corner (Hard to reach)
-                        targetBtn.style.width = '30px';
-                        targetBtn.style.height = '30px';
-                        targetBtn.style.top = '20px';
-                        targetBtn.style.right = '20px';
-                        targetBtn.style.bottom = 'auto';
-                        targetBtn.style.left = 'auto';
-                        targetBtn.style.borderRadius = '50%';
-                        statusDiv.innerText = 'Quick! Tap the red target!';
-                    } else if (currentTest === 2) {
-                        // Large target, bottom full width (Thumb zone)
-                        targetBtn.style.width = '90%';
-                        targetBtn.style.height = '60px';
-                        targetBtn.style.bottom = '20px';
-                        targetBtn.style.left = '5%';
-                        targetBtn.style.top = 'auto';
-                        targetBtn.style.right = 'auto';
-                        targetBtn.style.borderRadius = '12px';
-                        statusDiv.innerText = 'Quick! Tap the red target!';
-                    }
-
-                    startTime = Date.now();
-                });
-
-                targetBtn.addEventListener('click', () => {
-                    const reactionTime = Date.now() - startTime;
-                    targetBtn.classList.add('hidden');
-
-                    if (currentTest === 1) {
-                        time1Display.innerText = reactionTime + ' ms';
-                        currentTest = 2;
-                        startBtn.innerText = 'Start Test 2';
-                        startBtn.classList.remove('hidden');
-                        statusDiv.innerText = 'Test 1 Complete. Tap Start Test 2 when ready.';
-                    } else if (currentTest === 2) {
-                        time2Display.innerText = reactionTime + ' ms';
-                        insightBox.classList.remove('hidden');
-                        
-                        stateManager.completeLab('fitts-law-lab');
-                        statusDiv.innerText = '✅ Fitts\'s Law Validated! Lab Complete.';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
-                    }
-                });
-            });
-
-
-            // --- Lab 7: Accessibility Simulator Lab ---
-            const lab7Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('7. **Accessibility Simulator') || el.textContent.includes('7. Accessibility Simulator'));
-            
-            lab7Headers.forEach(header => {
-                if(header.dataset.labInjected) return;
-
-                const labContainer = document.createElement('div');
-                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
-                labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Accessibility Simulator</h4>
-                    <p class="text-sm text-gray-600 mb-6">Never rely on color alone to convey meaning. Apply a vision filter, observe how the red/green buttons become indistinguishable, then apply the Accessible UI fix to pass.</p>
-                    
-                    <div class="flex flex-col md:flex-row gap-8 mb-6">
-                        <div class="w-full md:w-1/2 space-y-5">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Simulate Vision Impairment</label>
-                                <select id="lab7-filter" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="none">Normal Vision</option>
-                                    <option value="grayscale(100%)">Achromatopsia (Total Color Blindness)</option>
-                                    <option value="contrast(60%) brightness(90%)">Low Contrast Vision</option>
-                                    <option value="blur(3px)">Cataracts (Blur)</option>
-                                </select>
-                            </div>
-                            
-                            <div class="pt-4 border-t border-gray-200">
-                                <label class="flex items-center space-x-3 cursor-pointer p-3 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-                                    <input type="checkbox" id="lab7-fix" class="h-5 w-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                                    <span class="text-sm font-bold text-gray-800">Apply Accessible UI Fix</span>
-                                </label>
-                                <p class="text-xs text-gray-500 mt-2 ml-1">Adds icons, underlines, and high-contrast blue/black instead of red/green.</p>
-                            </div>
-                        </div>
-                        
-                        <div class="w-full md:w-1/2 flex justify-center bg-gray-200 p-6 rounded-lg shadow-inner overflow-hidden">
-                            <div id="lab7-preview" class="bg-white p-5 rounded-lg shadow-md w-full max-w-[280px] transition-all duration-300">
-                                <h5 class="font-bold text-gray-900 mb-2">Confirm Delete</h5>
-                                <p class="text-sm text-gray-600 mb-6">Are you sure you want to delete this project? This action cannot be undone.</p>
-                                
-                                <div class="flex gap-3">
-                                    <button id="lab7-btn-cancel" class="flex-1 py-2 rounded text-sm font-bold text-white transition-colors" style="background-color: #ef4444;">
-                                        <span class="lab7-icon hidden mr-1">✖</span>Cancel
-                                    </button>
-                                    <button id="lab7-btn-confirm" class="flex-1 py-2 rounded text-sm font-bold text-white transition-colors" style="background-color: #22c55e;">
-                                        <span class="lab7-icon hidden mr-1">✔</span>Delete
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="lab7-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
-                        Step 1: Apply a vision filter to see the flaw.
-                    </div>
-                `;
-
-                header.parentNode.insertBefore(labContainer, header.nextSibling);
-                header.dataset.labInjected = 'true';
-
-                const filterSelect = labContainer.querySelector('#lab7-filter');
-                const fixToggle = labContainer.querySelector('#lab7-fix');
-                const preview = labContainer.querySelector('#lab7-preview');
-                const btnCancel = labContainer.querySelector('#lab7-btn-cancel');
-                const btnConfirm = labContainer.querySelector('#lab7-btn-confirm');
-                const icons = labContainer.querySelectorAll('.lab7-icon');
-                const statusDiv = labContainer.querySelector('#lab7-status');
-
-                let hasTestedFilter = false;
-
-                function updateLab7() {
-                    const filter = filterSelect.value;
-                    const isFixed = fixToggle.checked;
-                    
-                    // Apply CSS Filter
-                    preview.style.filter = filter;
-
-                    if (filter !== 'none') hasTestedFilter = true;
-
-                    // Apply UI Fixes
-                    if (isFixed) {
-                        btnCancel.style.backgroundColor = '#ffffff';
-                        btnCancel.style.color = '#1f2937';
-                        btnCancel.style.border = '2px solid #d1d5db';
-                        
-                        btnConfirm.style.backgroundColor = '#1d4ed8'; // High contrast blue
-                        btnConfirm.style.border = '2px solid #1d4ed8';
-                        
-                        icons.forEach(i => i.classList.remove('hidden'));
-                    } else {
-                        btnCancel.style.backgroundColor = '#ef4444'; // Red
-                        btnCancel.style.color = '#ffffff';
-                        btnCancel.style.border = 'none';
-                        
-                        btnConfirm.style.backgroundColor = '#22c55e'; // Green
-                        btnConfirm.style.border = 'none';
-                        
-                        icons.forEach(i => i.classList.add('hidden'));
-                    }
-
-                    // Completion Logic
-                    if (hasTestedFilter && isFixed) {
-                        stateManager.completeLab('accessibility-lab');
-                        statusDiv.innerText = '✅ Lab Complete! Icons & contrast survive the filters.';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
-                    } else if (hasTestedFilter && !isFixed) {
-                        statusDiv.innerText = 'Step 2: Now check the "Apply Accessible UI Fix" box.';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
-                    } else {
-                        statusDiv.innerText = 'Step 1: Apply a vision filter to see the flaw.';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors';
-                    }
-                }
-
-                filterSelect.addEventListener('change', updateLab7);
-                fixToggle.addEventListener('change', updateLab7);
-            });
-
-
-            // --- Lab 6: Prototype Timing Lab ---
-            const lab6Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('6. **Prototype Timing') || el.textContent.includes('6. Prototype Timing'));
-            
-            lab6Headers.forEach(header => {
-                if(header.dataset.labInjected) return;
-
-                const labContainer = document.createElement('div');
-                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
-                labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Prototype Timing Lab</h4>
-                    <p class="text-sm text-gray-600 mb-6">Test micro-interaction timings. Complete the lab by setting the standard accessible UX timing (Ease-Out, 200ms - 300ms).</p>
-                    
-                    <div class="flex flex-col md:flex-row gap-8 mb-6 items-center">
-                        <div class="w-full md:w-1/2 space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Easing Curve</label>
-                                <select id="lab6-easing" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="linear">Linear</option>
-                                    <option value="ease-in">Ease-In (Accelerate)</option>
-                                    <option value="ease-out">Ease-Out (Decelerate)</option>
-                                    <option value="ease-in-out">Ease-In-Out (Standard)</option>
-                                    <option value="cubic-bezier(0.175, 0.885, 0.32, 1.275)">Spring (Bouncy)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <div class="flex justify-between items-center mb-1">
-                                    <label class="block text-sm font-medium text-gray-700">Duration: <span id="lab6-dur-val" class="font-bold text-indigo-600">500</span>ms</label>
-                                </div>
-                                <input type="range" id="lab6-duration" min="100" max="1000" value="500" step="50" class="w-full accent-indigo-600">
-                            </div>
-                            <button id="lab6-trigger" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md font-medium hover:bg-indigo-700 transition-colors shadow-sm">Play Animation</button>
-                        </div>
-                        
-                        <div class="w-full md:w-1/2 flex flex-col justify-center bg-gray-200 p-6 rounded-lg shadow-inner h-48 relative overflow-hidden border border-gray-300">
-                            <div class="absolute w-full px-6 left-0 flex items-center">
-                                <div id="lab6-dot" class="h-12 w-12 bg-indigo-500 rounded-full shadow-lg transform transition-transform" style="transform: translateX(0px);"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="lab6-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
-                        Select Ease-Out and 200-300ms, then hit Play.
-                    </div>
-                `;
-
-                header.parentNode.insertBefore(labContainer, header.nextSibling);
-                header.dataset.labInjected = 'true';
-
-                const easingSelect = labContainer.querySelector('#lab6-easing');
-                const durSlider = labContainer.querySelector('#lab6-duration');
-                const durVal = labContainer.querySelector('#lab6-dur-val');
-                const triggerBtn = labContainer.querySelector('#lab6-trigger');
-                const dot = labContainer.querySelector('#lab6-dot');
-                const statusDiv = labContainer.querySelector('#lab6-status');
-
-                let isToggled = false;
-
-                function updateLab6Settings() {
-                    durVal.innerText = durSlider.value;
-                }
-
-                easingSelect.addEventListener('change', updateLab6Settings);
-                durSlider.addEventListener('input', updateLab6Settings);
-
-                triggerBtn.addEventListener('click', () => {
-                    const easing = easingSelect.value;
-                    const duration = parseInt(durSlider.value);
-                    
-                    // Apply dynamic CSS transition properties securely
-                    dot.style.transition = 'transform ' + duration + 'ms ' + easing;
-                    
-                    // Toggle position visually inside the bounding box
-                    isToggled = !isToggled;
-                    dot.style.transform = isToggled ? 'translateX(150px)' : 'translateX(0px)';
-
-                    // Evaluate completion logic per curriculum specs
-                    const isValidEasing = easing === 'ease-out';
-                    const isValidDuration = duration >= 200 && duration <= 300;
-
-                    if (isValidEasing && isValidDuration) {
-                        stateManager.completeLab('prototype-timing-lab');
-                        statusDiv.innerText = '✅ Perfect! Ease-Out at ~250ms is the UX standard.';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
-                    } else if (isValidEasing) {
-                        statusDiv.innerText = '❌ Easing is correct, but duration should be 200-300ms.';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
-                    } else if (isValidDuration) {
-                        statusDiv.innerText = '❌ Duration is good, but use Ease-Out for UI entrances.';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-yellow-100 text-yellow-700 transition-colors';
-                    } else {
-                        statusDiv.innerText = '❌ Set easing to Ease-Out and duration to 200-300ms.';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-red-100 text-red-700 transition-colors';
-                    }
-                });
-
-                updateLab6Settings();
-            });
-
-
-            // --- Lab 5: Spacing & Grid Lab ---
-            const lab5Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('5. **Spacing') || el.textContent.includes('5. Spacing'));
-            
-            lab5Headers.forEach(header => {
-                if(header.dataset.labInjected) return;
-
-                const labContainer = document.createElement('div');
-                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
-                labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: 8px Grid Spacing Lab</h4>
-                    <p class="text-sm text-gray-600 mb-6">Adjust the padding and gap of this component. Complete the lab by setting both values to valid 8px grid multipliers (e.g., 8, 16, 24, 32).</p>
-                    
-                    <div class="flex flex-col md:flex-row gap-8 mb-6 items-center justify-center">
-                        <div class="w-full md:w-1/2 space-y-6">
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="text-sm font-bold text-gray-700">Container Padding</label>
-                                    <span id="lab5-pad-val" class="font-mono text-sm bg-white px-2 py-1 border rounded text-red-600 font-bold">10px</span>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button id="lab5-pad-dec" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded transition-colors active:bg-gray-400">-</button>
-                                    <button id="lab5-pad-inc" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded transition-colors active:bg-gray-400">+</button>
-                                </div>
-                            </div>
-                            
-                            <div>
-                                <div class="flex justify-between items-center mb-2">
-                                    <label class="text-sm font-bold text-gray-700">Item Gap</label>
-                                    <span id="lab5-gap-val" class="font-mono text-sm bg-white px-2 py-1 border rounded text-red-600 font-bold">14px</span>
-                                </div>
-                                <div class="flex gap-2">
-                                    <button id="lab5-gap-dec" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded transition-colors active:bg-gray-400">-</button>
-                                    <button id="lab5-gap-inc" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 rounded transition-colors active:bg-gray-400">+</button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="w-full md:w-1/2 flex justify-center bg-gray-200 p-8 rounded-lg shadow-inner">
-                            <div id="lab5-preview" class="bg-white border-2 border-indigo-400 rounded-lg shadow flex flex-col w-full max-w-[250px] transition-all duration-200" style="padding: 10px; gap: 14px;">
-                                <div class="h-6 bg-gray-300 rounded w-3/4"></div>
-                                <div class="h-4 bg-gray-200 rounded w-full"></div>
-                                <div class="h-4 bg-gray-200 rounded w-5/6"></div>
-                                <div class="h-10 bg-indigo-600 rounded w-full mt-4"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div id="lab5-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
-                        Align both values to the 8px grid to complete.
-                    </div>
-                `;
-
-                header.parentNode.insertBefore(labContainer, header.nextSibling);
-                header.dataset.labInjected = 'true';
-
-                // Initial broken values
-                let pad = 10;
-                let gap = 14;
-
-                const padVal = labContainer.querySelector('#lab5-pad-val');
-                const gapVal = labContainer.querySelector('#lab5-gap-val');
-                const preview = labContainer.querySelector('#lab5-preview');
-                const statusDiv = labContainer.querySelector('#lab5-status');
-
-                function updateLab5() {
-                    padVal.innerText = pad + 'px';
-                    gapVal.innerText = gap + 'px';
-                    
-                    preview.style.padding = pad + 'px';
-                    preview.style.gap = gap + 'px';
-
-                    const padValid = pad > 0 && pad % 8 === 0;
-                    const gapValid = gap > 0 && gap % 8 === 0;
-
-                    padVal.className = `font-mono text-sm bg-white px-2 py-1 border rounded font-bold ${padValid ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}`;
-                    gapVal.className = `font-mono text-sm bg-white px-2 py-1 border rounded font-bold ${gapValid ? 'text-green-600 border-green-300' : 'text-red-600 border-red-300'}`;
-
-                    if (padValid && gapValid) {
-                        stateManager.completeLab('spacing-lab');
-                        statusDiv.innerText = '✅ 8px Grid Aligned! Lab Complete.';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
-                    } else {
-                        statusDiv.innerText = 'Align both values to the 8px grid (e.g., 8, 16, 24).';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors';
-                    }
-                }
-
-                // Tap controls (incrementing by 2px so the user has to stop at multiples of 8)
-                labContainer.querySelector('#lab5-pad-inc').addEventListener('click', () => { pad += 2; updateLab5(); });
-                labContainer.querySelector('#lab5-pad-dec').addEventListener('click', () => { if(pad > 0) pad -= 2; updateLab5(); });
-                labContainer.querySelector('#lab5-gap-inc').addEventListener('click', () => { gap += 2; updateLab5(); });
-                labContainer.querySelector('#lab5-gap-dec').addEventListener('click', () => { if(gap > 0) gap -= 2; updateLab5(); });
-                
-                updateLab5();
-            });
-
-
-            // --- Lab 4: Wireframe Builder Lab ---
-            const lab4Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('4. **Wireframe Builder**') || el.textContent.includes('4. Wireframe Builder'));
-            
-            lab4Headers.forEach(header => {
-                if(header.dataset.labInjected) return;
-
-                const labContainer = document.createElement('div');
-                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
-                labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Wireframe Builder</h4>
-                    <p class="text-sm text-gray-600 mb-6">Assemble a mobile screen. Tap components to add them to the screen. Tap them on the screen to remove them.</p>
-                    
-                    <div class="flex flex-col md:flex-row gap-6 mb-6">
-                        <div class="flex-1">
-                            <div class="text-sm font-bold text-gray-700 mb-2">Components</div>
-                            <div id="lab4-toolbox" class="flex flex-col gap-2">
-                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="header">Header</button>
-                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="hero">Hero Section</button>
-                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="card">Content Card</button>
-                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="primary-btn">Primary Button</button>
-                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="nav">Bottom Nav</button>
-                                <button class="lab4-tool px-3 py-2 bg-white border border-gray-300 rounded text-sm font-medium hover:bg-gray-50 text-left transition-colors" data-type="footer">Footer</button>
-                            </div>
-                        </div>
-                        
-                        <div class="flex-1">
-                            <div class="text-sm font-bold text-gray-700 mb-2">Mobile Screen (Tap to remove)</div>
-                            <div id="lab4-canvas" class="flex flex-col gap-1 p-2 bg-gray-200 border-4 border-gray-800 rounded-[2rem] min-h-[350px] w-full max-w-[280px] mx-auto overflow-hidden shadow-inner">
-                                <!-- Screen elements populate here -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                        <div class="text-sm font-bold text-gray-700 mb-2">Heuristic Checks:</div>
-                        <ul class="text-sm space-y-2 text-gray-600 font-medium" id="lab4-checks">
-                            <li id="check-header" class="flex items-center gap-2">❌ Header is first</li>
-                            <li id="check-hero" class="flex items-center gap-2">❌ Includes a hero</li>
-                            <li id="check-cards" class="flex items-center gap-2">❌ >= 2 cards</li>
-                            <li id="check-btn" class="flex items-center gap-2">❌ Exactly 1 primary button</li>
-                            <li id="check-bottom" class="flex items-center gap-2">❌ Nav or Footer is last</li>
-                        </ul>
-                    </div>
-                    <div id="lab4-status" class="mt-4 p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
-                        Pass all heuristic checks to complete.
-                    </div>
-                `;
-
-                header.parentNode.insertBefore(labContainer, header.nextSibling);
-                header.dataset.labInjected = 'true';
-
-                const toolbox = labContainer.querySelector('#lab4-toolbox');
-                const canvas = labContainer.querySelector('#lab4-canvas');
-                const statusDiv = labContainer.querySelector('#lab4-status');
-
-                function checkLab4Completion() {
-                    const items = Array.from(canvas.children).map(el => el.dataset.type);
-                    
-                    const hasHeaderFirst = items.length > 0 && items[0] === 'header';
-                    const hasHero = items.includes('hero');
-                    const cardCount = items.filter(i => i === 'card').length;
-                    const btnCount = items.filter(i => i === 'primary-btn').length;
-                    const hasBottomLast = items.length > 0 && (items[items.length - 1] === 'nav' || items[items.length - 1] === 'footer');
-
-                    document.getElementById('check-header').innerHTML = hasHeaderFirst ? '✅ <span class="text-green-700">Header is first</span>' : '❌ Header is first';
-                    document.getElementById('check-hero').innerHTML = hasHero ? '✅ <span class="text-green-700">Includes a hero</span>' : '❌ Includes a hero';
-                    document.getElementById('check-cards').innerHTML = cardCount >= 2 ? '✅ <span class="text-green-700">>= 2 cards</span>' : '❌ >= 2 cards';
-                    document.getElementById('check-btn').innerHTML = btnCount === 1 ? '✅ <span class="text-green-700">Exactly 1 primary button</span>' : '❌ Exactly 1 primary button';
-                    document.getElementById('check-bottom').innerHTML = hasBottomLast ? '✅ <span class="text-green-700">Nav or Footer is last</span>' : '❌ Nav or Footer is last';
-
-                    if (hasHeaderFirst && hasHero && cardCount >= 2 && btnCount === 1 && hasBottomLast) {
-                        stateManager.completeLab('wireframe-builder-lab');
-                        statusDiv.innerText = '✅ Wireframe Complete!';
-                        statusDiv.className = 'mt-4 p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
-                    } else {
-                        statusDiv.innerText = 'Pass all heuristic checks to complete.';
-                        statusDiv.className = 'mt-4 p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors';
-                    }
-                }
-
-                toolbox.addEventListener('click', (e) => {
-                    const tool = e.target.closest('.lab4-tool');
-                    if (tool) {
-                        const type = tool.dataset.type;
-                        const text = tool.innerText;
-                        const block = document.createElement('div');
-                        block.dataset.type = type;
-                        block.className = 'p-3 text-center text-xs font-bold bg-indigo-100 text-indigo-800 rounded border border-indigo-200 cursor-pointer hover:bg-red-100 hover:text-red-800 hover:border-red-200 transition-colors shadow-sm';
-                        block.innerText = text;
-                        canvas.appendChild(block);
-                        checkLab4Completion();
-                    }
-                });
-
-                canvas.addEventListener('click', (e) => {
-                    const block = e.target.closest('div[data-type]');
-                    if (block) {
-                        block.remove();
-                        checkLab4Completion();
-                    }
-                });
-            });
-
-
-            // --- Lab 3: Card Sort Lab ---
-            const lab3Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('3. **Card Sort Lab**') || el.textContent.includes('3. Card Sort Lab'));
-            
-            lab3Headers.forEach(header => {
-                if(header.dataset.labInjected) return;
-
-                const labContainer = document.createElement('div');
-                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
-                labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Card Sort Lab</h4>
-                    <p class="text-sm text-gray-600 mb-6">Organize content into groups. Tap an item, then tap a group to move it. Name all groups. Complete when all 9 are sorted with >= 2 items per group.</p>
-                    
-                    <div class="mb-6">
-                        <div class="text-sm font-bold text-gray-700 mb-2">Unsorted Items</div>
-                        <div id="lab3-unsorted" class="flex flex-wrap gap-2 p-4 bg-white border border-dashed border-gray-300 rounded-lg min-h-[80px]">
-                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="1">Pricing</button>
-                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="2">Team</button>
-                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="3">Careers</button>
-                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="4">Features</button>
-                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="5">API Docs</button>
-                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="6">Contact Us</button>
-                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="7">Case Studies</button>
-                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="8">System Status</button>
-                            <button class="lab3-item px-3 py-1.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded text-sm font-medium transition-colors" data-id="9">Terms of Service</button>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        <div class="lab3-group p-3 bg-white border border-gray-200 rounded-lg flex flex-col" data-group="1">
-                            <input type="text" placeholder="Name Group 1..." class="lab3-group-name w-full mb-3 p-1.5 text-sm border-b border-gray-300 focus:outline-none focus:border-indigo-500 font-bold text-gray-800">
-                            <div class="lab3-dropzone flex-1 flex flex-col gap-2 min-h-[100px] p-2 bg-gray-50 rounded border border-dashed border-gray-200"></div>
-                        </div>
-                        <div class="lab3-group p-3 bg-white border border-gray-200 rounded-lg flex flex-col" data-group="2">
-                            <input type="text" placeholder="Name Group 2..." class="lab3-group-name w-full mb-3 p-1.5 text-sm border-b border-gray-300 focus:outline-none focus:border-indigo-500 font-bold text-gray-800">
-                            <div class="lab3-dropzone flex-1 flex flex-col gap-2 min-h-[100px] p-2 bg-gray-50 rounded border border-dashed border-gray-200"></div>
-                        </div>
-                        <div class="lab3-group p-3 bg-white border border-gray-200 rounded-lg flex flex-col" data-group="3">
-                            <input type="text" placeholder="Name Group 3..." class="lab3-group-name w-full mb-3 p-1.5 text-sm border-b border-gray-300 focus:outline-none focus:border-indigo-500 font-bold text-gray-800">
-                            <div class="lab3-dropzone flex-1 flex flex-col gap-2 min-h-[100px] p-2 bg-gray-50 rounded border border-dashed border-gray-200"></div>
-                        </div>
-                    </div>
-
-                    <div id="lab3-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors">
-                        Sort all items and name groups to complete.
-                    </div>
-                `;
-
-                header.parentNode.insertBefore(labContainer, header.nextSibling);
-                header.dataset.labInjected = 'true';
-
-                let selectedItem = null;
-                const statusDiv = document.getElementById('lab3-status');
-                const unsortedZone = document.getElementById('lab3-unsorted');
-                const groups = document.querySelectorAll('.lab3-group');
-                const inputs = document.querySelectorAll('.lab3-group-name');
-
-                function checkLab3Completion() {
-                    const unsortedCount = unsortedZone.querySelectorAll('.lab3-item').length;
-                    let validGroups = 0;
-                    let allNamed = true;
-
-                    groups.forEach(g => {
-                        const count = g.querySelectorAll('.lab3-item').length;
-                        if (count >= 2) validGroups++;
-                    });
-
-                    inputs.forEach(input => {
-                        if (input.value.trim().length === 0) allNamed = false;
-                    });
-
-                    if (unsortedCount === 0 && validGroups === 3 && allNamed) {
-                        stateManager.completeLab('card-sort-lab');
-                        statusDiv.innerText = '✅ Card Sort Complete!';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700 transition-colors';
-                    } else {
-                        statusDiv.innerText = 'Sort all items (>= 2 per group) and name all groups.';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500 transition-colors';
-                    }
-                }
-
-                // Mobile-friendly tap-to-select, tap-to-move logic
-                labContainer.addEventListener('click', (e) => {
-                    const item = e.target.closest('.lab3-item');
-                    const dropzone = e.target.closest('.lab3-dropzone') || (e.target.closest('#lab3-unsorted') && !item ? unsortedZone : null);
-
-                    if (item) {
-                        if (selectedItem) selectedItem.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-1');
-                        if (selectedItem === item) {
-                            selectedItem = null; 
-                        } else {
-                            selectedItem = item;
-                            selectedItem.classList.add('ring-2', 'ring-indigo-500', 'ring-offset-1');
-                        }
-                    } else if (dropzone && selectedItem) {
-                        dropzone.appendChild(selectedItem);
-                        selectedItem.classList.remove('ring-2', 'ring-indigo-500', 'ring-offset-1');
-                        selectedItem = null;
-                        checkLab3Completion();
-                    }
-                });
-
-                inputs.forEach(input => input.addEventListener('input', checkLab3Completion));
-            });
-
-
-            // --- Lab 2: Type Scale Lab ---
-            const lab2Headers = Array.from(document.querySelectorAll('h3, h4, li, p')).filter(el => el.textContent.includes('2. **Type Scale Lab**') || el.textContent.includes('2. Type Scale Lab'));
-            
-            lab2Headers.forEach(header => {
-                if(header.dataset.labInjected) return;
-
-                const labContainer = document.createElement('div');
-                labContainer.className = 'mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 not-prose';
-                labContainer.innerHTML = `
-                    <h4 class="text-lg font-bold text-gray-900 mb-2">Interactive Sandbox: Type Scale Lab[span_6](start_span)[span_6](end_span)</h4>
-                    <p class="text-sm text-gray-600 mb-6">Design a readable modular type scale. Base size must be >= 16px to complete[span_7](start_span)[span_7](end_span).</p>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Base Size: <span id="lab2-base-val" class="font-bold text-indigo-600">16</span>px</label>
-                                <input type="range" id="lab2-base" min="12" max="24" value="16" step="1" class="w-full accent-indigo-600">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Scale Ratio</label>
-                                <select id="lab2-ratio" class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                                    <option value="1.067">Minor Second (1.067)</option>
-                                    <option value="1.125">Major Second (1.125)</option>
-                                    <option value="1.200" selected>Minor Third (1.200)</option>
-                                    <option value="1.250">Major Third (1.250)</option>
-                                    <option value="1.333">Perfect Fourth (1.333)</option>
-                                    <option value="1.414">Augmented Fourth (1.414)</option>
-                                    <option value="1.500">Perfect Fifth (1.500)</option>
-                                </select>
-                            </div>
-                            <button id="lab2-save" class="w-full bg-indigo-600 text-white py-2 px-4 rounded-md font-medium hover:bg-indigo-700 transition-colors shadow-sm">Save Scale Configuration</button>
-                        </div>
-                        
-                        <div class="p-4 bg-white rounded-lg shadow-inner border border-gray-200 space-y-3 overflow-y-auto max-h-64" id="lab2-preview">
-                            <!-- Dynamic Scale Preview Rendered Here -->
-                        </div>
-                    </div>
-
-                    <div id="lab2-status" class="p-3 rounded-lg text-center font-bold text-sm bg-gray-100 text-gray-500">
-                        Adjust scale and click Save to complete.
-                    </div>
-                `;
-
-                header.parentNode.insertBefore(labContainer, header.nextSibling);
-                header.dataset.labInjected = 'true';
-
-                const baseInput = document.getElementById('lab2-base');
-                const baseValSpan = document.getElementById('lab2-base-val');
-                const ratioSelect = document.getElementById('lab2-ratio');
-                const previewBox = document.getElementById('lab2-preview');
-                const saveBtn = document.getElementById('lab2-save');
-                const statusDiv = document.getElementById('lab2-status');
-
-                function updateLab2() {
-                    const base = parseFloat(baseInput.value);
-                    const ratio = parseFloat(ratioSelect.value);
-                    baseValSpan.innerText = base;
-
-                    // Generate 5 steps of modular scale (Caption, Body, H3, H2, H1)
-                    const steps = [
-                        { name: 'Caption', size: Math.round(base / ratio) },
-                        { name: 'Body', size: base },
-                        { name: 'H3', size: Math.round(base * ratio) },
-                        { name: 'H2', size: Math.round(base * Math.pow(ratio, 2)) },
-                        { name: 'H1', size: Math.round(base * Math.pow(ratio, 3)) }
-                    ];
-
-                    previewBox.innerHTML = steps.map(s => `
-                        <div class="flex items-baseline justify-between border-b border-gray-100 pb-1">
-                            <span class="text-xs text-gray-400 font-mono">${s.name} (${s.size}px)</span>
-                            <span style="font-size: ${s.size}px; line-height: 1.2;" class="font-bold text-gray-800">Preview Text</span>
-                        </div>
-                    `).join('');
-                }
-
-                baseInput.addEventListener('input', updateLab2);
-                ratioSelect.addEventListener('change', updateLab2);
-
-                saveBtn.addEventListener('click', () => {
-                    const base = parseFloat(baseInput.value);
-                    if (base >= 16) {
-                        stateManager.completeLab('type-scale-lab');
-                        statusDiv.innerText = '✅ Type Scale Saved & Lab Complete!';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-green-100 text-green-700';
-                    } else {
-                        statusDiv.innerText = '❌ Base size must be at least 16px[span_8](start_span)[span_8](end_span).';
-                        statusDiv.className = 'p-3 rounded-lg text-center font-bold text-sm bg-red-100 text-red-700';
-                    }
-                });
-
-                updateLab2();
-            });
-        }
-
-        function transformInteractiveElements() {
-            let currentModule = 'intro';
-            document.querySelectorAll('h3').forEach(h3 => {
-                const text = h3.textContent;
-                if(text.includes('Module')) {
-                    currentModule = text.split(':')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-                    h3.setAttribute('data-module', currentModule);
-                }
-            });
-
-            document.querySelectorAll('h4').forEach(h4 => {
-                const title = h4.textContent.trim();
-                const container = h4.nextElementSibling;
-                let moduleNode = h4;
-                while (moduleNode && moduleNode.tagName !== 'H3') { moduleNode = moduleNode.previousElementSibling; }
-                const moduleId = moduleNode ? moduleNode.getAttribute('data-module') : 'unknown';
-
-                if (title === 'Project' || title.includes('Project:')) {
-                    if (container && (container.tagName === 'OL' || container.tagName === 'UL')) {
-                        const steps = container.querySelectorAll('li');
-                        steps.forEach((li, index) => {
-                            const originalText = li.innerHTML;
-                            const isChecked = stateManager.data.projects[moduleId]?.steps[index] ? 'checked' : '';
-                            li.innerHTML = `<label class="flex items-start space-x-3 cursor-pointer p-2 hover:bg-gray-50 rounded transition-colors"><input type="checkbox" class="mt-1 h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" data-module="${moduleId}" data-step="${index}" ${isChecked}><span class="text-gray-700">${originalText}</span></label>`;
-                        });
-                        
-                        const existingEvidence = stateManager.data.projects[moduleId]?.evidence || '';
-                        const evidenceBox = document.createElement('div');
-                        evidenceBox.className = 'mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200';
-                        evidenceBox.innerHTML = `
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Evidence Note (Required: 30+ chars)</label>
-                            <textarea class="w-full p-3 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" rows="3" placeholder="Paste a link to your Figma file, GitHub repo, or live project here..." data-module="${moduleId}">${existingEvidence}</textarea>
-                            <p class="text-xs text-gray-500 mt-2 evidence-counter">Current length: <span class="${existingEvidence.length >= 30 ? 'text-green-600' : 'text-red-500'} font-bold">${existingEvidence.length}</span> chars</p>
-                        `;
-                        container.parentNode.insertBefore(evidenceBox, container.nextSibling);
-                    }
-                }
-
-                if (title === 'Quiz' || title.includes('Quiz:')) {
-                    if (container && (container.tagName === 'OL' || container.tagName === 'UL')) {
-                        const quizForm = document.createElement('form');
-                        quizForm.className = 'quiz-form mt-4 space-y-6';
-                        quizForm.dataset.module = moduleId;
-                        
-                        const questions = container.querySelectorAll(':scope > li');
-                        let questionHtml = '';
-                        
-                        questions.forEach((qLi, qIndex) => {
-                            const questionText = qLi.childNodes[0].textContent.trim();
-                            const questionId = `${moduleId}-q${qIndex}`;
-                            const optionsUl = qLi.querySelector('ul');
-                            if(!optionsUl) return;
-                            
-                            const options = optionsUl.querySelectorAll('li');
-                            let optionsHtml = '';
-                            let explanation = '';
-                            
-                            options.forEach((optLi, oIndex) => {
-                                const optText = optLi.textContent.trim();
-                                if (optText.startsWith('Why:')) {
-                                    explanation = optText.replace('Why:', '').trim();
-                                } else {
-                                    const isCorrect = optText.includes('(correct)');
-                                    const cleanOptText = optText.replace('(correct)', '').trim();
-                                    optionsHtml += `
-                                        <label class="flex items-center space-x-3 p-2 rounded hover:bg-gray-50 cursor-pointer border border-transparent transition-colors opt-label">
-                                            <input type="radio" name="${questionId}" value="${oIndex}" data-correct="${isCorrect}" class="text-indigo-600 focus:ring-indigo-500 h-4 w-4">
-                                            <span class="text-gray-700">${cleanOptText}</span>
-                                        </label>
-                                    `;
-                                }
-                            });
-                            
-                            questionHtml += `
-                                <div class="p-5 bg-white border border-gray-200 rounded-lg shadow-sm question-block transition-colors" data-qid="${questionId}">
-                                    <p class="font-medium text-gray-900 mb-4">${qIndex + 1}. ${questionText}</p>
-                                    <div class="space-y-2">${optionsHtml}</div>
-                                    <div class="explanation hidden mt-4 p-3 bg-indigo-50 text-indigo-800 text-sm rounded-md border border-indigo-100">
-                                        <span class="font-bold uppercase tracking-wide text-xs">Explanation:</span> ${explanation}
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        
-                        quizForm.innerHTML = `
-                            ${questionHtml}
-                            <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <button type="button" class="submit-quiz w-full sm:w-auto bg-indigo-600 text-white px-6 py-2.5 rounded-md hover:bg-indigo-700 font-medium transition-colors shadow-sm">Submit Answers</button>
-                                <span class="quiz-result font-bold text-lg"></span>
-                            </div>
-                        `;
-                        container.parentNode.replaceChild(quizForm, container);
-                    }
-                }
-            });
-
-            document.querySelectorAll('input[type="checkbox"]').forEach(box => {
-                box.addEventListener('change', e => stateManager.updateProject(e.target.dataset.module, e.target.dataset.step, e.target.checked));
-            });
-            document.querySelectorAll('textarea').forEach(area => {
-                area.addEventListener('input', e => {
-                    const text = e.target.value;
-                    stateManager.updateEvidence(e.target.dataset.module, text);
-                    const counterSpan = e.target.parentElement.querySelector('.evidence-counter span');
-                    counterSpan.innerText = text.length;
-                    counterSpan.className = text.length >= 30 ? 'text-green-600 font-bold' : 'text-red-500 font-bold';
-                });
-            });
-            document.querySelectorAll('.submit-quiz').forEach(btn => {
-                btn.addEventListener('click', e => {
-                    const form = e.target.closest('form');
-                    const moduleId = form.dataset.module;
-                    const questions = form.querySelectorAll('.question-block');
-                    let correctCount = 0;
-                    const answers = {};
-                    
-                    questions.forEach(qBlock => {
-                        const qid = qBlock.dataset.qid;
-                        const selected = qBlock.querySelector(`input[name="${qid}"]:checked`);
-                        const explanation = qBlock.querySelector('.explanation');
-                        const labels = qBlock.querySelectorAll('.opt-label');
-                        
-                        labels.forEach(l => { l.classList.remove('bg-green-50', 'border-green-200', 'bg-red-50', 'border-red-200'); });
-                        qBlock.classList.remove('border-green-400', 'border-red-400', 'border-gray-200');
-
-                        let isCorrect = false;
-                        if (selected) {
-                            isCorrect = selected.dataset.correct === 'true';
-                            answers[qid] = selected.value;
-                            const parentLabel = selected.closest('.opt-label');
-                            parentLabel.classList.add(isCorrect ? 'bg-green-50' : 'bg-red-50');
-                            parentLabel.classList.add(isCorrect ? 'border-green-200' : 'border-red-200');
-                        }
-                        
-                        if (isCorrect) correctCount++;
-                        explanation.classList.remove('hidden');
-                        qBlock.classList.add(isCorrect ? 'border-green-400' : 'border-red-400');
-                        
-                        stateManager.scheduleReview(qid, isCorrect);
-                    });
-                    
-                    const total = questions.length;
-                    const required = Math.round(0.8 * total);
-                    const passed = correctCount >= required;
-                    
-                    stateManager.data.quizzes[moduleId] = { score: correctCount, total, passed, answers };
-                    stateManager.save();
-                    
-                    const resultSpan = form.querySelector('.quiz-result');
-                    resultSpan.innerText = `Score: ${correctCount}/${total} — ${passed ? '✅ Passed!' : '❌ Needs Review'}`;
-                    resultSpan.className = `quiz-result font-bold text-lg ${passed ? 'text-green-600' : 'text-red-600'}`;
-                });
-            });
-
-            stateManager.checkModuleCompletion();
-        }
-
-        fetch('ux-studio-curriculum.md')
-            .then(response => response.text())
-            .then(text => {
-                document.getElementById('app-content').innerHTML = marked.parse(text);
-                transformInteractiveElements();
-                injectLabs();
-            })
-            .catch(err => {
-                document.getElementById('app-content').innerHTML = '<p class="text-red-500">Error loading curriculum file.</p>';
-            });
-    </script>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>UX Studio — Full UI/UX Design Course</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef1f6;--card:#fff;--ink:#1b2340;--mute:#5d6682;--line:#d5dbe8;--ac:#5b4bff;--acT:#fff;--ok:#12805c;--okBg:#dcf5ea;--bad:#c2410c;--badBg:#ffe8d9;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10142a;--card:#1a2040;--ink:#eef0fb;--mute:#a1a9c8;--line:#2b335c;--ac:#8c80ff;--acT:#10142a;--ok:#5fe0b0;--okBg:#12372c;--bad:#ffa66b;--badBg:#3d2412}}
+:root[data-theme="dark"]{--bg:#10142a;--card:#1a2040;--ink:#eef0fb;--mute:#a1a9c8;--line:#2b335c;--ac:#8c80ff;--acT:#10142a;--ok:#5fe0b0;--okBg:#12372c;--bad:#ffa66b;--badBg:#3d2412}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:17px/1.6 'Atkinson Hyperlegible',system-ui,sans-serif;min-height:100%}
+h1,h2,h3{font-family:'Bricolage Grotesque',system-ui,sans-serif;line-height:1.15;margin:0}
+main{max-width:640px;margin:0 auto;padding:20px 16px 48px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.top{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.ring{width:64px;height:64px;flex:none}
+.top h1{font-size:28px;font-weight:800}.top p{margin:2px 0 0;color:var(--mute);font-size:15px}
+.mod{display:flex;width:100%;align-items:center;gap:14px;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.mod b{font-family:'Bricolage Grotesque';font-size:19px;display:block}
+.mod small{color:var(--mute)}
+.pie{width:44px;height:44px;flex:none}
+.back{background:none;border:0;color:var(--ac);font-weight:700;padding:6px 0;margin-bottom:8px}
+.lv{display:inline-block;font-size:14px;font-weight:700;color:var(--ac);border:1.5px solid var(--ac);border-radius:99px;padding:1px 10px;margin:8px 0}
+h2{font-size:32px;font-weight:800}
+.tabs{display:flex;gap:6px;margin:16px 0;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:4px}
+.tabs button{flex:1;border:0;background:none;border-radius:9px;padding:9px 4px;font-weight:700}
+.tabs button[aria-selected=true]{background:var(--ac);color:var(--acT)}
+.tabs i{font-style:normal;color:var(--ok)}
+.tabs button[aria-selected=true] i{color:var(--acT)}
+p{margin:0 0 14px}.sec{font-size:21px;margin:24px 0 8px}
+.key{background:var(--card);border-left:5px solid var(--ac);border-radius:8px;padding:12px 16px;margin:18px 0}
+.key h3{font-size:18px;margin-bottom:6px}.key ul{margin:0;padding-left:20px}
+.btn{display:block;width:100%;background:var(--ac);color:var(--acT);border:0;border-radius:12px;padding:14px;font-weight:700;font-size:17px;margin-top:16px}
+.btn.done{background:var(--okBg);color:var(--ok)}
+.q{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.q h3{font-size:19px;margin-bottom:10px}
+.o{display:block;width:100%;text-align:left;background:var(--bg);border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
+.o.ok{background:var(--okBg);border-color:var(--ok)}.o.no{background:var(--badBg);border-color:var(--bad)}
+.why{font-size:15px;color:var(--mute);margin:6px 0 0}
+.score{text-align:center;font:800 26px 'Bricolage Grotesque';padding:12px}
+.st{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px;width:100%;text-align:left}
+.st .bx{width:26px;height:26px;border:2px solid var(--ac);border-radius:7px;flex:none;display:grid;place-items:center;font-weight:800;color:var(--acT)}
+.st.on{background:var(--okBg);border-color:var(--ok)}.st.on .bx{background:var(--ok);border-color:var(--ok)}
+.rs{background:none;border:0;color:var(--mute);text-decoration:underline;margin-top:24px;font-size:14px}
+.inp{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:10px;margin-bottom:8px}
+.cert{border:4px double var(--ac);border-radius:12px;padding:28px 18px;text-align:center;background:var(--card)}.cert h1{font-size:34px;margin:8px 0}.cert small{color:var(--mute)}
+.btn:disabled{opacity:.5}
+@media print{.no-print,.back{display:none}body{background:#fff;color:#000}}
+</style></head><body><main id="app"></main>
+<script>fetch('curriculum.json').then(r=>{if(!r.ok)throw 0;return r.json()}).then(M=>{
+
+const R={Beginner:0,Intermediate:1,Advanced:2,Expert:3},O=M.map((_,i)=>i).sort((a,b)=>R[M[a].lv]-R[M[b].lv]);
+
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const g=id=>document.getElementById(id);
+const TI=[{n:'Foundation',l:[0],c:20},{n:'Professional',l:[0,1,2],c:30},{n:'Expert',l:[0,1,2,3],c:40}];
+const mods=t=>M.map((_,i)=>i).filter(i=>t.l.includes(R[M[i].lv]));
+const ready=t=>mods(t).every(i=>parts(i)==3)&&(t.n=='Foundation'||labsDone()==LABS.length);
+let E=null;
+function certs(){
+$.innerHTML=`<button class="back" id="bk">‹ All modules</button><h2>Certification</h2><p>To earn a certificate, finish every module in the tier (lesson, quiz at 80% or higher, project with written evidence), then pass the final exam at 80%. Exams use randomized questions from every module in the tier.</p>`+TI.map((t,k)=>{const m=mods(t),d=m.filter(i=>parts(i)==3).length,x=S.x[k],r=ready(t);return `<div class="q"><h3>${t.n} Certificate</h3><p class="why">${d} / ${m.length} modules complete · ${labsDone()}/${LABS.length} labs${t.n=='Foundation'?' (optional)':' (required)'} · ${t.c}-question exam</p>${x?`<button class="btn" data-c="${k}">View certificate (${Math.round(x.s/x.N*100)}%)</button>`:`<button class="btn" data-e="${k}" ${r?'':'disabled'}>${r?'Start final exam':'Finish modules and labs first'}</button>`}</div>`}).join('');
+g('bk').onclick=home;
+$.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>cert(+b.dataset.c));
+$.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>startExam(+b.dataset.e))}
+function startExam(k){const t=TI[k];let pool=[];mods(t).forEach(i=>M[i].q.forEach(q=>pool.push([q,i])));
+pool.sort(()=>Math.random()-.5);pool=pool.slice(0,t.c);
+E={k,n:0,r:[],qs:pool.map(([q,i])=>{const o=q[1].map((x,j)=>[x,j]).sort(()=>Math.random()-.5);return{q:q[0],o,a:o.findIndex(z=>z[1]==q[2]),m:i}})};scrollTo(0,0);examQ()}
+function examQ(){const q=E.qs[E.n];
+$.innerHTML=`<p class="why">${TI[E.k].n} exam · question ${E.n+1} of ${E.qs.length}</p><div class="q"><h3>${q.q}</h3>${q.o.map((o,j)=>`<button class="o" data-j="${j}">${o[0]}</button>`).join('')}</div>`;
+$.querySelectorAll('.o').forEach(b=>b.onclick=()=>{E.r.push(+b.dataset.j);E.n++;E.n<E.qs.length?examQ():examEnd()})}
+function examEnd(){const s=E.qs.filter((q,i)=>E.r[i]==q.a).length,N=E.qs.length,pass=s/N>=.8,k=E.k;
+const miss=[...new Set(E.qs.filter((q,i)=>E.r[i]!=q.a).map(q=>M[q.m].t))];
+if(pass){S.x[k]={s,N,d:new Date().toISOString().slice(0,10),id:Math.random().toString(36).slice(2,10).toUpperCase()};save()}
+$.innerHTML=`<h2>${s} / ${N}</h2><div class="score">${pass?'Passed':'Not yet. 80% needed'}</div>${miss.length?`<p>Review these modules, then retake:</p><ul>${miss.map(x=>`<li>${x}</li>`).join('')}</ul>`:''}<button class="btn" id="nx">${pass?'View certificate':'Back to certification'}</button>`;
+g('nx').onclick=()=>pass?cert(k):certs()}
+function cert(k){const t=TI[k],x=S.x[k];
+if(!S.n){$.innerHTML=`<button class="back" id="bk">‹ Back</button><h2>Your name</h2><p>Enter the name to print on your certificate.</p><input id="nm" class="inp" maxlength="60" placeholder="Full name"><button class="btn" id="sv">Create certificate</button>`;
+g('bk').onclick=certs;g('sv').onclick=()=>{const v=g('nm').value.trim();if(v.length<2)return;S.n=v;save();cert(k)};return}
+$.innerHTML=`<button class="back no-print" id="bk">‹ Back</button><div class="cert"><p>UX Studio</p><h2>Certificate of Completion</h2><p>This certifies that</p><h1>${esc(S.n)}</h1><p>completed the <b>${t.n}</b> level of the UX Studio UI/UX design program: ${mods(t).length} modules with quizzes passed at 80% or higher and projects documented with evidence, plus a ${x.N}-question final exam (${Math.round(x.s/x.N*100)}%).</p><p>${x.d} · Certificate ID ${x.id}</p><small>Self-study program certificate. Not an accredited credential.</small></div><button class="btn no-print" id="pr">Print or save as PDF</button>`;
+g('bk').onclick=certs;g('pr').onclick=()=>window.print()}
+const LABS=[{id:'ct',t:'Contrast Lab',d:'Build a color pair that passes WCAG AA'},{id:'ty',t:'Type Scale Lab',d:'Design a readable modular type scale'},{id:'cs',t:'Card Sort Lab',d:'Organize content into groups users understand'},{id:'wf',t:'Wireframe Builder',d:'Assemble a mobile screen and pass the checks'},{id:'he',t:'Heuristic Review',d:'Diagnose 5 usability problems'}];
+const labsDone=()=>LABS.filter(l=>S.b[l.id]).length;
+const fin=id=>{S.b[id]=1;save()};
+const OK=t=>`<div class="score" style="color:var(--ok)">${t||'Lab complete ✓'}</div>`;
+function labs(){$.innerHTML=`<button class="back" id="bk">‹ All modules</button><h2>Hands-on Labs</h2><p>Build and test real skills. ${labsDone()} of ${LABS.length} complete. All five are required for the Professional and Expert certificates.</p>`+LABS.map((l,i)=>`<button class="mod" data-l="${i}"><span><b>${l.t}</b><small>${S.b[l.id]?'✓ Complete · ':''}${l.d}</small></span></button>`).join('');
+g('bk').onclick=home;$.querySelectorAll('[data-l]').forEach(b=>b.onclick=()=>lab(+b.dataset.l))}
+function lab(i){$.innerHTML=`<button class="back" id="bk">‹ All labs</button><h2>${LABS[i].t}</h2><div id="lb"></div>`;g('bk').onclick=labs;L[LABS[i].id](g('lb'))}
+const lum=h=>{const c=[1,3,5].map(i=>{const v=parseInt(h.substr(i,2),16)/255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]};
+const cr=(a,b)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05)};
+const L={};
+L.ct=el=>{el.innerHTML=`<p>Pick text and background colors. Goal: reach at least 4.5:1, and do not use plain black on white.</p><p><label>Text <input type="color" id="c1" value="#999999"></label> &nbsp; <label>Background <input type="color" id="c2" value="#ffffff"></label></p><div id="pv" class="q"><h3>Sample heading</h3><p>Body text sample for readability.</p></div><div id="rs"></div>`;
+const up=()=>{const a=g('c1').value,b=g('c2').value,r=cr(a,b);g('pv').style.color=a;g('pv').style.background=b;
+const P=(n,t)=>`${n}: ${r>=t?'Pass':'Fail'}`;
+g('rs').innerHTML=`<div class="score">${r.toFixed(2)} : 1</div><p>${P('Normal text AA (4.5)',4.5)}<br>${P('Large text AA (3)',3)}<br>${P('UI components (3)',3)}<br>${P('AAA text (7)',7)}</p>`;
+if(r>=4.5&&!(a=='#000000'&&b=='#ffffff')){fin('ct');g('rs').innerHTML+=OK()}};
+g('c1').oninput=g('c2').oninput=up;up()};
+L.ty=el=>{el.innerHTML=`<p>Set a base size and ratio, then save a readable scale (base 16px or larger).</p><p><label>Base <input type="number" id="bs" class="inp" value="14" min="10" max="24"></label><select id="rt" class="inp"><option>1.125</option><option>1.2</option><option selected>1.25</option><option>1.333</option><option>1.5</option></select></p><div id="pr"></div><button class="btn" id="sv">Save this scale</button><div id="ms"></div>`;
+const up=()=>{const b=+g('bs').value,r=+g('rt').value;g('pr').innerHTML=[3,2,1,0,-1].map(n=>{const s=(b*Math.pow(r,n)).toFixed(1);return `<div style="font:700 ${s}px 'Bricolage Grotesque';line-height:1.2;margin:6px 0">${n>0?'Heading '+n:n==0?'Body text':'Caption'} · ${s}px</div>`}).join('')};
+g('bs').oninput=g('rt').onchange=up;up();
+g('sv').onclick=()=>{g('ms').innerHTML=+g('bs').value>=16?(fin('ty'),OK()):'<p class="why">Body text under 16px is hard to read on phones. Raise the base.</p>'}};
+L.cs=el=>{const it=['Pricing','Contact us','Sign in','Blog','Help center','Careers','Refund policy','About us','Tutorials'],a={},nm={};
+const draw=()=>{el.innerHTML=`<p>Tap each item to cycle it through Group 1, 2, and 3. Then name each group. Every group needs at least 2 items.</p>`+it.map((x,i)=>`<button class="o" data-i="${i}">${x}<b style="float:right">${a[i]?'Group '+a[i]:'unsorted'}</b></button>`).join('')+[1,2,3].map(n=>`<input class="inp" data-n="${n}" placeholder="Name for Group ${n}" value="${esc(nm[n]||'')}">`).join('')+`<button class="btn" id="ck">Check my sort</button><div id="ms"></div>`;
+el.querySelectorAll('[data-i]').forEach(b=>b.onclick=()=>{const i=+b.dataset.i;a[i]=((a[i]||0)%3)+1;draw()});
+el.querySelectorAll('[data-n]').forEach(b=>b.oninput=()=>nm[b.dataset.n]=b.value);
+g('ck').onclick=()=>{const c=[1,2,3].map(n=>it.filter((x,i)=>a[i]==n).length),ok=it.every((x,i)=>a[i])&&c.every(x=>x>=2)&&[1,2,3].every(n=>(nm[n]||'').trim().length>=2);
+g('ms').innerHTML=ok?(fin('cs'),OK()):'<p class="why">Sort every item, give each group 2 or more items, and name all 3 groups.</p>'}};draw()};
+L.wf=el=>{const P={'Header':'Header','Hero':'Hero headline','Card':'Content card','Input':'Input field','Primary button':'Primary button','Nav':'Bottom navigation','Footer':'Footer'},st=[];
+const draw=()=>{el.innerHTML=`<p>Add parts and reorder them. Goal: header first, a hero, 2 or more content cards, exactly one primary button, and navigation or footer last.</p><div>`+Object.keys(P).map(k=>`<button class="o" style="display:inline-block;width:auto;margin-right:6px" data-a="${k}">+ ${P[k]}</button>`).join('')+`</div><div class="q" style="margin-top:10px">`+(st.length?st.map((x,i)=>`<div class="st" style="padding:8px;margin-bottom:6px"><span style="flex:1">${P[x]}</span><button data-u="${i}">↑</button> <button data-d="${i}">↓</button> <button data-x="${i}">✕</button></div>`).join(''):'<p class="why">Empty screen. Add a part.</p>')+`</div><button class="btn" id="ck">Check my wireframe</button><div id="ms"></div>`;
+el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{st.push(b.dataset.a);draw()});
+el.querySelectorAll('[data-u]').forEach(b=>b.onclick=()=>{const i=+b.dataset.u;if(i>0){[st[i-1],st[i]]=[st[i],st[i-1]];draw()}});
+el.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const i=+b.dataset.d;if(i<st.length-1){[st[i+1],st[i]]=[st[i],st[i+1]];draw()}});
+el.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{st.splice(+b.dataset.x,1);draw()});
+g('ck').onclick=()=>{const l=st[st.length-1],c=[['Header is first',st[0]=='Header'],['Has a hero',st.includes('Hero')],['2 or more content cards',st.filter(x=>x=='Card').length>=2],['Exactly one primary button',st.filter(x=>x=='Primary button').length==1],['Navigation or footer is last',l=='Nav'||l=='Footer']];
+g('ms').innerHTML='<p>'+c.map(x=>(x[1]?'✓ ':'✗ ')+x[0]).join('<br>')+'</p>'+(c.every(x=>x[1])?(fin('wf'),OK()):'')}};draw()};
+L.he=el=>{const H=['Visibility of system status','Error prevention','Consistency and standards','Recognition over recall','Help users recover from errors'],F=[['After tapping Pay, nothing changes for 8 seconds.',0],['Delete account sits beside Save with no confirmation.',1],['One screen says Log in, another Sign on, another Enter.',2],['Users must remember a code shown two screens earlier.',3],['An error reads only: Failure 0x4F.',4]];
+el.innerHTML=`<p>Match each problem to the heuristic it violates. You need 4 of 5.</p>`+F.map((f,i)=>`<div class="q"><h3>${f[0]}</h3><select class="inp" data-q="${i}"><option value="">Choose…</option>${H.map((h,j)=>`<option value="${j}">${h}</option>`).join('')}</select></div>`).join('')+`<button class="btn" id="ck">Check my review</button><div id="ms"></div>`;
+g('ck').onclick=()=>{let s=0;el.querySelectorAll('select').forEach(x=>{if(x.value!==''&&+x.value==F[+x.dataset.q][1])s++});
+g('ms').innerHTML=`<div class="score">${s} / 5</div>`+(s>=4?(fin('he'),OK()):'<p class="why">Review the heuristics lessons and try again.</p>')}};
+LABS.push({id:'sp',t:'Spacing Lab',d:'Apply the 8px grid and proximity'},{id:'pt',t:'Prototype State Lab',d:'Wire up a button state machine'},{id:'ax',t:'Accessibility Audit',d:'Find the real accessibility failures'});
+L.sp=el=>{el.innerHTML=`<p>Tune spacing. Rules: every value is a multiple of 8, space between groups is larger than space inside a group, and padding is 16px or more.</p>`+[['pd','Card padding',16],['ig','Space inside group',4],['gg','Space between groups',12]].map(x=>`<p><label>${x[1]}: <b id="v${x[0]}">${x[2]}</b>px<input type="range" min="4" max="64" step="4" id="${x[0]}" value="${x[2]}" style="width:100%"></label></p>`).join('')+`<div id="cd" class="q"><div id="a1"><h3>Plan</h3><p>Pro, 10 seats</p></div><div id="a2"><h3>Billing</h3><p>Renews monthly</p></div></div><button class="btn" id="ck">Check spacing</button><div id="ms"></div>`;
+const up=()=>{const p=+g('pd').value,i=+g('ig').value,w=+g('gg').value;['pd','ig','gg'].forEach(k=>g('v'+k).textContent=g(k).value);g('cd').style.padding=p+'px';el.querySelectorAll('#cd h3,#cd p').forEach(n=>n.style.margin='0 0 '+i+'px');g('a2').style.marginTop=w+'px'};
+['pd','ig','gg'].forEach(k=>g(k).oninput=up);up();
+g('ck').onclick=()=>{const p=+g('pd').value,i=+g('ig').value,w=+g('gg').value,c=[['All values multiples of 8',[p,i,w].every(v=>v%8==0)],['Group gap larger than inner gap',w>i],['Padding at least 16px',p>=16]];
+g('ms').innerHTML='<p>'+c.map(x=>(x[1]?'✓ ':'✗ ')+x[0]).join('<br>')+'</p>'+(c.every(x=>x[1])?(fin('sp'),OK()):'')}};
+L.pt=el=>{const S4=['Default','Loading','Success','Error'],E=[['Tap Submit from Default',1],['Request succeeds',2],['Request fails',3],['Tap Retry from Error',1],['Success message times out',0]];
+el.innerHTML=`<p>Choose the next state for each event of a submit button. Then test it.</p>`+E.map((e,i)=>`<div class="q"><h3>${e[0]}</h3><select class="inp" data-q="${i}"><option value="">Next state…</option>${S4.map((s,j)=>`<option value="${j}">${s}</option>`).join('')}</select></div>`).join('')+`<button class="btn" id="ck">Check state machine</button><div id="ms"></div><div id="dm"></div>`;
+g('ck').onclick=()=>{let ok=0;el.querySelectorAll('select').forEach(x=>{if(x.value!==''&&+x.value==E[+x.dataset.q][1])ok++});
+if(ok<5){g('ms').innerHTML=`<div class="score">${ok} / 5 correct</div><p class="why">Think: what must the user see while waiting, after success, and after a failure?</p>`;return}
+fin('pt');let s=0;g('ms').innerHTML=OK();g('dm').innerHTML='<p>Try your button. Click it to cycle through the states.</p><button class="btn" id="bt">Submit</button>';
+g('bt').onclick=()=>{s=(s+1)%4;g('bt').textContent=['Submit','Sending…','Sent ✓','Retry'][s]}}};
+L.ax=el=>{const I=[['The placeholder is the only label on an input.',1],['A 44px-tall button is labeled Submit.',0],['Errors appear only as red text.',1],['An informative image has alt text describing its purpose.',0],['Focus outlines were removed with no replacement.',1],['Body text has a 5.1:1 contrast ratio.',0]];
+el.innerHTML=`<p>Select only the items that are accessibility failures.</p>`+I.map((x,i)=>`<button class="st" role="checkbox" aria-checked="false" data-i="${i}"><span class="bx"></span><span>${x[0]}</span></button>`).join('')+`<button class="btn" id="ck">Check my audit</button><div id="ms"></div>`;
+const sel={};el.querySelectorAll('.st').forEach(b=>b.onclick=()=>{const i=b.dataset.i;sel[i]=!sel[i];b.classList.toggle('on',sel[i]);b.querySelector('.bx').textContent=sel[i]?'✓':'';b.setAttribute('aria-checked',!!sel[i])});
+g('ck').onclick=()=>{const ok=I.every((x,i)=>!!sel[i]==!!x[1]);g('ms').innerHTML=ok?OK():'<p class="why">Not quite. Missing a failure or flagging something that already passes. Review WCAG: labels, color-only meaning, focus visibility, contrast.</p>';if(ok)fin('ax')}};
+LABS.push({id:'tt',t:'Tree Test Lab',d:'Find items in a hierarchy'},{id:'tk',t:'Design Token Builder',d:'Create a purposeful token set'},{id:'tm',t:'Motion Timing Lab',d:'Tune durations for real interactions'});
+L.tt=el=>{const T={Shop:{Men:1,Women:1,Sale:1},Account:{Profile:1,Orders:1,Billing:{'Payment methods':1,Invoices:1,'Billing address':1}},Help:{'Contact us':1,Returns:1,'Shipping info':1}},K=[['Change the address your card is billed to','Billing address'],['Start a return','Returns'],["Download last month's receipt",'Invoices']];let n=0,ok=0,path=[];
+const at=()=>path.reduce((o,k)=>o[k],T);
+const draw=()=>{if(n>=3){el.innerHTML=`<div class="score">${ok} / 3 found</div>`+(ok==3?(fin('tt'),OK()):'<p class="why">You need all 3. Think about the labels a first-time visitor expects.</p><button class="btn" id="rt">Try again</button>');if(ok<3)g('rt').onclick=()=>{n=0;ok=0;path=[];draw()};return}
+const c=at();el.innerHTML=`<p>Task ${n+1} of 3: <b>${K[n][0]}</b></p><p class="why">Location: Home${path.map(x=>' › '+x).join('')}</p>`+Object.keys(c).map(k=>`<button class="o" data-k="${k}">${k}${typeof c[k]=='object'?' ›':''}</button>`).join('')+(path.length?'<button class="o" id="bk2">‹ Back</button>':'');
+el.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(typeof c[k]=='object'){path.push(k)}else{if(k==K[n][1])ok++;n++;path=[]}draw()});
+if(path.length)g('bk2').onclick=()=>{path.pop();draw()}};draw()};
+L.tk=el=>{el.innerHTML=`<p>Build tokens. Pick a primary color that passes 4.5:1 with white text, choose a spacing base, and name the danger token by purpose (like <b>color-danger</b>), not by value.</p><p><label>Primary <input type="color" id="pc" value="#7aa2ff"></label> &nbsp; <label>Spacing base <select id="sb" class="inp"><option>4</option><option selected>8</option></select></label></p><p><label>Danger token name <input id="dn" class="inp" value="red-500"></label></p><div id="pv"></div><pre id="css" style="white-space:pre-wrap;font-size:14px"></pre><div id="ms"></div>`;
+const up=()=>{const c=g('pc').value,r=cr(c,'#ffffff'),b=g('sb').value,nm=g('dn').value.trim();g('pv').innerHTML=`<button class="btn" style="background:${c};color:#fff;margin:0 0 8px">Primary button · ${r.toFixed(1)}:1</button>`;g('css').textContent=`:root{\n --color-primary:${c};\n --space-1:${b}px;\n --space-2:${b*2}px;\n --${nm||'token'}:#c2410c;\n}`;
+const ok=r>=4.5&&/^color-[a-z]+(-[a-z]+)*$/.test(nm)&&!/red|blue|green|\d/.test(nm);
+g('ms').innerHTML='<p>'+[['Primary passes 4.5:1 with white',r>=4.5],['Danger token named by purpose',/^color-[a-z]+(-[a-z]+)*$/.test(nm)&&!/red|blue|green|\d/.test(nm)]].map(x=>(x[1]?'✓ ':'✗ ')+x[0]).join('<br>')+'</p>'+(ok?(fin('tk'),OK()):'')};
+['pc','sb','dn'].forEach(k=>g(k).oninput=up);g('sb').onchange=up;up()};
+L.tm=el=>{const I=[['Button press feedback',100,200,150],['Panel or menu opening',200,300,600],['Modal appearing',200,400,800]];
+el.innerHTML=`<p>Set durations that feel responsive. Press Play to preview. Targets are shown in each label.</p>`+I.map((x,i)=>`<div class="q"><h3>${x[0]} (${x[1]} to ${x[2]} ms)</h3><div style="height:28px;background:var(--bg);border-radius:8px;overflow:hidden"><div id="bx${i}" style="width:28px;height:28px;background:var(--ac);border-radius:8px"></div></div><p><b id="dv${i}">${x[3]}</b> ms<input type="range" min="50" max="1000" step="50" id="d${i}" value="${x[3]}" style="width:100%"></p><button class="o" data-p="${i}">Play</button></div>`).join('')+`<button class="btn" id="ck">Check timings</button><div id="ms"></div>`;
+I.forEach((x,i)=>g('d'+i).oninput=()=>g('dv'+i).textContent=g('d'+i).value);
+el.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{const i=+b.dataset.p,x=g('bx'+i);x.style.transition='none';x.style.transform='translateX(0)';void x.offsetWidth;x.style.transition=`transform ${g('d'+i).value}ms ease-out`;x.style.transform=`translateX(${x.parentNode.clientWidth-28}px)`});
+g('ck').onclick=()=>{const c=I.map((x,i)=>[x[0],+g('d'+i).value>=x[1]&&+g('d'+i).value<=x[2]]);g('ms').innerHTML='<p>'+c.map(x=>(x[1]?'✓ ':'✗ ')+x[0]).join('<br>')+'</p>'+(c.every(x=>x[1])?(fin('tm'),OK()):'')}};
+LABS.push({id:'fl',t:"Fitts's Law Lab",d:'Measure how target size changes tap speed'},{id:'ab',t:'A/B Testing Simulator',d:'Judge two experiments with a significance test'},{id:'st',t:'Component States Lab',d:'Assign the right style to 5 button states'},{id:'as',t:'Accessibility Simulator',d:'Test a UI under vision-impairment filters'});
+L.fl=el=>{let n=0,t0=0;const T={s:[],l:[]};
+el.innerHTML=`<p>Tap each target as fast as you can. 10 rounds, with small and large targets mixed. Then compare your average times.</p><div id="ar" style="position:relative;height:260px;background:var(--card);border:1.5px solid var(--line);border-radius:12px;overflow:hidden"></div><div id="ms"></div>`;
+const next=()=>{const big=Math.random()>.5,sz=big?64:24,a=g('ar');a.innerHTML=`<button id="tg" style="position:absolute;width:${sz}px;height:${sz}px;border-radius:50%;border:0;background:var(--ac);left:${Math.random()*(a.clientWidth-sz)}px;top:${Math.random()*(260-sz)}px"></button>`;t0=performance.now();
+g('tg').onclick=()=>{(big?T.l:T.s).push(performance.now()-t0);n++;if(n<10)next();else{const av=x=>x.length?Math.round(x.reduce((p,c)=>p+c,0)/x.length):0;a.innerHTML='';g('ms').innerHTML=`<div class="score">Small: ${av(T.s)} ms · Large: ${av(T.l)} ms</div><p>Larger, closer targets are faster to hit. Keep touch targets at least 44px.</p>`+OK();fin('fl')}}};next()};
+const erf=x=>{const s=x<0?-1:1;x=Math.abs(x);const t=1/(1+.3275911*x);return s*(1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-x*x))};
+L.ab=el=>{const D=[[600,60,600,66,0],[800,80,800,112,1]];const ans={};
+el.innerHTML=`<p>Two finished experiments. Calculate each result, then decide: ship B (significant at p &lt; 0.05) or keep testing.</p>`+D.map((d,i)=>`<div class="q"><h3>Test ${i+1}</h3><p>A: ${d[1]} of ${d[0]} converted<br>B: ${d[3]} of ${d[2]} converted</p><button class="o" data-c="${i}">Calculate</button><div id="r${i}"></div><button class="o" data-a="${i}:1">Ship B</button><button class="o" data-a="${i}:0">Keep testing</button></div>`).join('')+`<button class="btn" id="ck">Check my decisions</button><div id="ms"></div>`;
+const calc=i=>{const d=D[i],p1=d[1]/d[0],p2=d[3]/d[2],p=(d[1]+d[3])/(d[0]+d[2]),se=Math.sqrt(p*(1-p)*(1/d[0]+1/d[2])),z=(p2-p1)/se,pv=2*(1-.5*(1+erf(Math.abs(z)/Math.SQRT2)));g('r'+i).innerHTML=`<p>Rates: ${(p1*100).toFixed(1)}% vs ${(p2*100).toFixed(1)}% · z = ${z.toFixed(2)} · p = ${pv.toFixed(3)}</p>`};
+el.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>calc(+b.dataset.c));
+el.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const[i,v]=b.dataset.a.split(':');ans[i]=+v;el.querySelectorAll(`[data-a^="${i}:"]`).forEach(x=>x.style.borderColor='var(--line)');b.style.borderColor='var(--ac)'});
+g('ck').onclick=()=>{const ok=D.every((d,i)=>ans[i]===d[4]);g('ms').innerHTML=ok?(fin('ab'),OK()):'<p class="why">Not quite. Calculate both, and ship only when p is below 0.05 with enough visitors per variant.</p>'}};
+L.st=el=>{const O=[['Primary','background:#5b4bff;color:#fff'],['Lighter primary','background:#7d70ff;color:#fff'],['Darker primary','background:#3d30c9;color:#fff'],['Muted grey, no pointer','background:#c9ccd6;color:#6b7185;cursor:not-allowed'],['Primary with spinner','background:#5b4bff;color:#fff;opacity:.85']],St=['Default','Hover','Active (pressed)','Disabled','Loading'];const ch={};
+el.innerHTML=`<p>Choose the right look for each button state.</p>`+St.map((s,i)=>`<div class="q"><h3>${s}</h3><select class="inp" data-i="${i}"><option value="">Choose…</option>${O.map((o,j)=>`<option value="${j}">${o[0]}</option>`).join('')}</select><div id="pv${i}"></div></div>`).join('')+`<button class="btn" id="ck">Check my states</button><div id="ms"></div>`;
+el.querySelectorAll('select').forEach(s=>s.onchange=()=>{const i=s.dataset.i,j=s.value;ch[i]=j===''?undefined:+j;g('pv'+i).innerHTML=j===''?'':`<button style="${O[+j][1]};border:0;border-radius:10px;padding:10px 18px;font:inherit;margin-top:6px">${+j==4?'⏳ Saving…':'Save'}</button>`});
+g('ck').onclick=()=>{const ok=St.every((s,i)=>ch[i]===i);g('ms').innerHTML=ok?(fin('st'),OK()):'<p class="why">Hover is lighter, pressed is darker, disabled is muted and not clickable, and loading shows progress.</p>'}};
+L.as=el=>{const F={None:'none','Achromatopsia (no color)':'grayscale(1)','Low vision (blur)':'blur(2px)','Cataracts (haze)':'blur(1.5px) contrast(.7) brightness(1.1)'},seen={};let fix=false;
+el.innerHTML=`<p>Turn on the fixes, then view the UI under all 3 impairment filters. Status must stay understandable.</p><p><select id="fs" class="inp">${Object.keys(F).map(k=>`<option>${k}</option>`).join('')}</select></p><button class="o" id="fx">Fixes: OFF</button><div id="ui" class="q"></div><p class="why" id="sn"></p><button class="btn" id="ck">Mark complete</button><div id="ms"></div>`;
+const draw=()=>{const f=g('fs').value;g('ui').style.filter=F[f];g('ui').innerHTML=fix?`<h3>Order status</h3><p style="color:#0b5d3b;font-weight:700">✓ Delivered (green check and text)</p><p style="color:#8a1c1c;font-weight:700">✗ Failed: payment declined</p><p style="font-size:18px">Contrast 7:1, large readable text</p>`:`<h3 style="color:#aaa">Order status</h3><p style="color:#2f9e44">Delivered</p><p style="color:#e03131">Failed</p><p style="color:#bbb;font-size:12px">Small low-contrast note</p>`;if(fix&&f!='None')seen[f]=1;g('sn').textContent=`Filters viewed with fixes: ${Object.keys(seen).length} / 3`};
+g('fs').onchange=draw;g('fx').onclick=()=>{fix=!fix;g('fx').textContent='Fixes: '+(fix?'ON':'OFF');draw()};draw();
+g('ck').onclick=()=>{const ok=Object.keys(seen).length==3;g('ms').innerHTML=ok?(fin('as'),OK()):'<p class="why">Turn fixes on and view all 3 filters first.</p>'}};
+const srsAdd=(i,qi)=>{if(!S.srs.find(x=>x.i==i&&x.qi==qi)){S.srs.push({i,qi,due:Date.now(),iv:1,ef:2.5});save()}};
+function review(){const due=S.srs.filter(x=>x.due<=Date.now());
+if(!due.length){$.innerHTML=`<button class="back" id="bk">‹ All modules</button><h2>Review queue</h2><p>Nothing is due. Quiz questions you miss return here on a spaced schedule. ${S.srs.length} tracked.</p>`;g('bk').onclick=home;return}
+const c=due[0],q=M[c.i].q[c.qi];
+$.innerHTML=`<button class="back" id="bk">‹ All modules</button><p class="why">${due.length} due · ${M[c.i].t}</p><div class="q"><h3>${q[0]}</h3>${q[1].map((o,j)=>`<button class="o" data-j="${j}">${o}</button>`).join('')}</div><div id="fb"></div>`;g('bk').onclick=home;
+$.querySelectorAll('.o').forEach(b=>b.onclick=()=>{const j=+b.dataset.j,ok=j==q[2];if(ok){c.iv=Math.max(2,Math.round(c.iv*c.ef));c.ef=Math.min(3,c.ef+.1)}else{c.iv=1;c.ef=Math.max(1.3,c.ef-.2)}c.due=Date.now()+c.iv*864e5;save();
+$.querySelectorAll('.o').forEach((x,k)=>{x.disabled=true;if(k==q[2])x.classList.add('ok');else if(k==j)x.classList.add('no')});
+g('fb').innerHTML=`<p class="why">${q[3]} Next review in ${c.iv} day${c.iv>1?'s':''}.</p><button class="btn" id="nx">Next</button>`;g('nx').onclick=review})}
+let S;try{S=JSON.parse(localStorage.getItem('uxc')||'{}')}catch(e){S={}}
+S.l=S.l||{};S.q=S.q||{};S.p=S.p||{};S.e=S.e||{};S.x=S.x||{};S.n=S.n||'';S.b=S.b||{};S.srs=S.srs||[];
+const save=()=>{try{localStorage.setItem('uxc',JSON.stringify(S))}catch(e){}};
+const $=document.getElementById('app');let cur=null,tab='l';
+const need=i=>Math.round(M[i].q.length*0.8),sc=i=>(S.q[i]||[]).filter((x,qi)=>x==M[i].q[qi][2]).length,answered=i=>(S.q[i]||[]).filter(x=>x!=null).length===M[i].q.length;const lessonDone=i=>!!S.l[i],quizDone=i=>answered(i)&&sc(i)>=need(i),projDone=i=>(S.p[i]||[]).filter(Boolean).length===M[i].p.s.length&&(S.e[i]||'').trim().length>=30;
+const parts=i=>(lessonDone(i)?1:0)+(quizDone(i)?1:0)+(projDone(i)?1:0);
+const total=()=>Math.round(M.reduce((a,_,i)=>a+parts(i),0)/(M.length*3)*100);
+const circ=(p,r)=>{const c=2*Math.PI*r;return `stroke-dasharray="${c*p/100} ${c}"`};
+function home(){const t=total();
+$.innerHTML=`<div class="top"><svg class="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="26" fill="none" stroke="var(--line)" stroke-width="7"/><circle cx="32" cy="32" r="26" fill="none" stroke="var(--ac)" stroke-width="7" stroke-linecap="round" transform="rotate(-90 32 32)" ${circ(t,26)}/><text x="32" y="37" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)">${t}%</text></svg><div><h1>UX Studio</h1><p>Beginner to hired, ${M.length} modules</p></div></div><button class="mod" id="rv"><span><b>Review queue</b><small>${S.srs.filter(x=>x.due<=Date.now()).length} due · spaced repetition of missed questions</small></span></button><button class="mod" id="lbs"><span><b>Hands-on Labs</b><small>${labsDone()} of ${LABS.length} complete · build and test skills</small></span></button><button class="mod" id="ct"><span><b>Certification</b><small>${[0,1,2].filter(k=>S.x[k]).length} of 3 earned · final exams at 80%</small></span></button>`+
+O.map((i,n)=>{const m=M[i];const p=parts(i)/3*100;return `<button class="mod" data-m="${i}"><svg class="pie" viewBox="0 0 44 44"><circle cx="22" cy="22" r="17" fill="none" stroke="var(--line)" stroke-width="6"/><circle cx="22" cy="22" r="17" fill="none" stroke="${p==100?'var(--ok)':'var(--ac)'}" stroke-width="6" stroke-linecap="round" transform="rotate(-90 22 22)" ${circ(p,17)}/></svg><span><b>${n+1}. ${m.t}</b><small>${m.lv} · lesson, ${m.q.length}-question quiz, project</small></span></button>`}).join('')+`<button class="rs" id="rs">Reset all progress</button>`;
+document.getElementById('rv').onclick=()=>{scrollTo(0,0);review()};
+document.getElementById('lbs').onclick=()=>{scrollTo(0,0);labs()};
+document.getElementById('ct').onclick=()=>{scrollTo(0,0);certs()};
+$.querySelectorAll('.mod[data-m]').forEach(b=>b.onclick=()=>{cur=+b.dataset.m;tab='l';scrollTo(0,0);mod()});
+document.getElementById('rs').onclick=()=>{if(confirm('Erase all progress?')){S={l:{},q:{},p:{},e:{},x:{},n:'',b:{},srs:[]};save();home()}}}
+function mod(){const m=M[cur],i=cur;
+const tb=(k,n,d)=>`<button role="tab" data-t="${k}" aria-selected="${tab==k}">${n} ${d?'<i>✓</i>':''}</button>`;
+let body='';
+if(tab=='l')body=m.l.map(x=>x[0]=='#'?`<h3 class="sec">${x.slice(1)}</h3>`:`<p>${x}</p>`).join('')+`<div class="key"><h3>Key takeaways</h3><ul>${m.k.map(x=>`<li>${x}</li>`).join('')}</ul></div><button class="btn ${lessonDone(i)?'done':''}" id="ld">${lessonDone(i)?'Lesson complete ✓':'Mark lesson complete'}</button>`;
+if(tab=='q'){const a=S.q[i]=S.q[i]||[];body=m.q.map((q,qi)=>`<div class="q"><h3>${q[0]}</h3>${q[1].map((o,oi)=>{let c='';if(a[qi]!=null){if(oi==q[2])c='ok';else if(oi==a[qi])c='no'}return `<button class="o ${c}" data-q="${qi}" data-o="${oi}" ${a[qi]!=null?'disabled':''}>${o}</button>`}).join('')}${a[qi]!=null?`<p class="why">${q[3]}</p>`:''}</div>`).join('');
+if(answered(i)){body+=`<div class="score">${sc(i)} / ${m.q.length}: ${quizDone(i)?'Passed':'Need '+need(i)+' to pass'}</div><button class="btn" id="rq">Retake quiz</button>`}}
+if(tab=='p'){const a=S.p[i]=S.p[i]||[];body=`<h3 style="margin-bottom:12px">${m.p.t}</h3>`+m.p.s.map((s,si)=>`<button class="st ${a[si]?'on':''}" data-s="${si}" role="checkbox" aria-checked="${!!a[si]}"><span class="bx">${a[si]?'✓':''}</span><span>${s}</span></button>`).join('')+`<h3 class="sec">Evidence</h3><p class="why">Describe or link what you built and what you learned (30+ characters). Required to complete.</p><textarea id="ev" class="inp" rows="4">${esc(S.e[i]||'')}</textarea>`+(projDone(i)?`<div class="score">Project complete</div>`:'')}
+$.innerHTML=`<button class="back" id="bk">‹ All modules</button><span class="lv">${m.lv}</span><h2>${O.indexOf(i)+1}. ${m.t}</h2><div class="tabs" role="tablist">${tb('l','Lesson',lessonDone(i))}${tb('q','Quiz',quizDone(i))}${tb('p','Project',projDone(i))}</div>${body}`;
+document.getElementById('bk').onclick=home;
+$.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;mod()});
+const ld=document.getElementById('ld');if(ld)ld.onclick=()=>{S.l[i]=!S.l[i];save();mod()};
+$.querySelectorAll('.o').forEach(b=>b.onclick=()=>{S.q[i][+b.dataset.q]=+b.dataset.o;if(+b.dataset.o!=M[i].q[+b.dataset.q][2])srsAdd(i,+b.dataset.q);save();mod()});
+const rq=document.getElementById('rq');if(rq)rq.onclick=()=>{S.q[i]=[];save();mod()};
+$.querySelectorAll('.st').forEach(b=>b.onclick=()=>{const k=+b.dataset.s;S.p[i][k]=!S.p[i][k];save();mod()});const ev=document.getElementById('ev');if(ev)ev.onchange=()=>{S.e[i]=ev.value;save();mod()}}
+home();
+
+}).catch(e=>{document.getElementById('app').innerHTML='<p>Could not load curriculum.json. Serve this folder over HTTP: python -m http.server 8080</p>'});</script></body></html>
